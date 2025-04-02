@@ -1,0 +1,9 @@
+[metadata]
+languagetag = "en"
+description = "English"
+recognition = "English"
+
+[login]
+input_username_placeholder = "Username"
+input_password_placeholder = "Password"
+input_submit_value = "Sign In"

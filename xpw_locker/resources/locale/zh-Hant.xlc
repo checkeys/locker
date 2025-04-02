@@ -1,0 +1,9 @@
+[metadata]
+languagetag = "zh-Hant"
+description = "traditional Chinese"
+recognition = "繁體中文"
+
+[login]
+input_username_placeholder = "用戶"
+input_password_placeholder = "密碼"
+input_submit_value = "登錄"

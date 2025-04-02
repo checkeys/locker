@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
+
+<svg width="800px" height="800px" viewBox="-3 0 20 20" version="1.1" id="logo"
+    xmlns="http://www.w3.org/2000/svg">
+    <title id="title1">xpw_logo</title>
+    <desc id="desc1">The XPW Logo</desc>
+    <defs id="defs1">
+        <linearGradient id="gradient1" x1="20%" y1="90%" x2="80%" y2="0%">
+            <stop offset="0%" style="stop-color:#FF0000;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#00FF00;stop-opacity:1" />
+        </linearGradient>
+    </defs>
+    <g id="page" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd"
+        transform="matrix(0.89285714,0,0,0.74998156,0.75,2.4999937)">
+        <g id="icons" transform="translate(-423,-4999)" fill="#000000">
+            <g id="images" transform="translate(56,160)">
+                <path d="m 376.121,4854.1215 c -0.39,0.39 -1.024,0.391 -1.414,0 l -0.707,-0.707 -0.707,0.707 c -0.391,0.39 -1.024,0.391 -1.415,0 -0.39,-0.391 -0.39,-1.024 0,-1.414 l 0.707,-0.707 -0.707,-0.707 c -0.39,-0.391 -0.39,-1.024 0,-1.415 0.391,-0.39 1.024,-0.39 1.415,0 l 0.707,0.707 0.707,-0.707 c 0.39,-0.39 1.023,-0.39 1.414,0 0.391,0.391 0.391,1.024 0,1.415 l -0.707,0.707 0.707,0.707 c 0.391,0.39 0.391,1.023 0,1.414 z m 2.879,1.879 c 0,0.552 -0.448,1 -1,1 h -8 c -0.553,0 -1,-0.448 -1,-1 v -8 c 0,-0.553 0.447,-1 1,-1 h 8 c 0.552,0 1,0.447 1,1 z m -7,-13 c 0,-1.103 0.897,-2 2,-2 1.102,0 2,1 2,2 v 2 h -4 z m 7,2 h -10 c -1.105,0 -2,0.895 -2,2 v 10 c 0,1.104 0.895,2 2,2 h 10 c 1.104,0 2,-0.896 2,-2 v -10 c 0,-1.105 -0.896,-2 -2,-2 z m -1,0 v -2 c 0,-2.248 -2.261,-4.495 -4.836,-3.905 -1.898,0.435 -3.164,2.246 -3.164,4.193 v 1.712 z" id="locked" fill="url(#gradient1)" />
+            </g>
+        </g>
+    </g>
+</svg>

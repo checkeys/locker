@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="{{ language }}">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background: linear-gradient(45deg, #47a8c9, #7a68a2, #f0b3a3);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+
+        .login-form {
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            border: none;
+            border-radius: 10px;
+            padding: 20px;
+            width: 300px;
+            text-align: center;
+        }
+
+        .login-form img {
+            width: 100px;
+            margin-bottom: 10px;
+        }
+
+        .login-form label {
+            color: #fff;
+            margin-right: 10px;
+        }
+
+        .login-form a {
+            color: #007bff;
+            text-decoration: none;
+        }
+
+        .login-form input[type="text"],
+        .login-form input[type="password"] {
+            width: 250px;
+            height: 50px;
+            padding: 0px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            background: #fff;
+            color: #000;
+            outline: none;
+            font-size: 18px;
+            text-align: center;
+        }
+
+        .login-form input[type="submit"] {
+            width: 250px;
+            height: 50px;
+            padding: 0px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: #fff;
+            cursor: pointer;
+            font-size: 18px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <form method="post">
+        <div class="login-form">
+            <input name="username" type="text" placeholder="{{ input_username_placeholder }}"><br>
+            <input name="password" type="password" placeholder="{{ input_password_placeholder }}"><br>
+            <input type="submit" value="{{ input_submit_value }}"><br>
+        </div>
+    </form>
+</body>
+
+</html>
