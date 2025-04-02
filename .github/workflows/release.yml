@@ -1,0 +1,24 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  PyPI:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install
+      run: |
+        python -m pip install --upgrade pip xpip-build xpip-upload
+        python -m pip --version
+        python -m pip list
+    - name: Build and Test
+      run: |
+        make build install test
+    - name: Upload to PyPI
+      run: |
+        xpip-upload --token ${{ secrets.PYPI_TOKEN }} dist/*
