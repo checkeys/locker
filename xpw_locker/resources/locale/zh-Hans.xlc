@@ -1,9 +1,7 @@
-[metadata]
-languagetag = "zh-Hans"
-description = "simplified Chinese"
-recognition = "简体中文"
+language = "zh-Hans"
 
 [login]
+language = "zh-Hans"
 input_username_placeholder = "用户"
 input_password_placeholder = "密码"
 input_submit_value = "登录"
