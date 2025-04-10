@@ -10,7 +10,6 @@ from urllib.parse import parse_qs
 from xhtml.header.headers import Cookies
 from xhtml.header.headers import Headers
 from xhtml.locale.template import LocaleTemplate
-from xkits_command import Command
 from xpw import AuthInit
 from xpw import BasicAuth
 from xpw import SessionKeys
@@ -40,9 +39,7 @@ class AuthRequestProxy(RequestProxy):
     def authenticate(self, path: str, method: str, data: bytes,
                      headers: MutableMapping[str, str]
                      ) -> Optional[ResponseProxy]:
-        Command().logger.debug("headers:\n%s", headers)
         if "localhost" in headers.get(Headers.HOST.value, ""):
-            Command().logger.debug("Skip python-requests.")
             return None
         cookies: Cookies = Cookies(headers.get(Headers.COOKIE.value, ""))
         session_id: str = cookies.get("session_id")
@@ -50,22 +47,15 @@ class AuthRequestProxy(RequestProxy):
             response = ResponseProxy.redirect(location=path)
             response.set_cookie("session_id", self.sessions.search().name)
             return response
-        Command().logger.debug("%s request verify.", session_id)
         if self.sessions.verify(session_id):
-            Command().logger.info("%s is logged.", session_id)
             return None  # logged
         if method == "POST":
             form_data = parse_qs(data.decode("utf-8"))
             username = form_data.get("username", [""])[0]
             password = form_data.get("password", [""])[0]
-            if not password:  # invalid password
-                Command().logger.info("%s login to %s with empty password.", session_id, username)  # noqa:E501
-            elif self.auth.verify(username, password):
+            if password and self.auth.verify(username, password):
                 self.sessions.sign_in(session_id)
-                Command().logger.info("%s sign in with %s.", session_id, username)  # noqa:E501
                 return ResponseProxy.redirect(location=path)
-            Command().logger.warning("%s login to %s error.", session_id, username)  # noqa:E501
-        Command().logger.debug("%s need to login.", session_id)
         context = self.TEMPLATE.search(headers.get("Accept-Language", "en"), "login").fill()  # noqa:E501
         content = self.TEMPLATE.seek("login.html").render(**context)
         response = ResponseProxy.make_ok_response(content.encode())
