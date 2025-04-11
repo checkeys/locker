@@ -42,6 +42,8 @@ class AuthRequestProxy(RequestProxy):
     def authenticate(self, path: str, method: str, data: bytes,
                      headers: MutableMapping[str, str]
                      ) -> Optional[ResponseProxy]:
+        if path == "/favicon.ico":
+            return None
         if "localhost" in headers.get(Headers.HOST.value, ""):
             return None
         cookies: Cookies = Cookies(headers.get(Headers.COOKIE.value, ""))
