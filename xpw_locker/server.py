@@ -17,24 +17,27 @@ from xserver.http.proxy import HttpProxy
 from xserver.http.proxy import RequestProxy
 from xserver.http.proxy import ResponseProxy
 
-BASE: str = os.path.dirname(__file__)
-
 
 class AuthRequestProxy(RequestProxy):
-    TEMPLATE = LocaleTemplate(os.path.join(BASE, "resources"))
 
-    def __init__(self, target_url: str, lifetime: int = 86400, auth: Optional[BasicAuth] = None):  # noqa:E501
-        self.__sessions: SessionKeys = SessionKeys(lifetime=lifetime)
-        self.__auth: BasicAuth = auth or AuthInit.from_file()
+    def __init__(self, target_url: str, authentication: BasicAuth,
+                 session_keys: SessionKeys, template: LocaleTemplate):
+        self.__authentication: BasicAuth = authentication
+        self.__sessions: SessionKeys = session_keys
+        self.__template: LocaleTemplate = template
         super().__init__(target_url)
 
     @property
-    def auth(self) -> BasicAuth:
-        return self.__auth
+    def authentication(self) -> BasicAuth:
+        return self.__authentication
 
     @property
     def sessions(self) -> SessionKeys:
         return self.__sessions
+
+    @property
+    def template(self) -> LocaleTemplate:
+        return self.__template
 
     def authenticate(self, path: str, method: str, data: bytes,
                      headers: MutableMapping[str, str]
@@ -53,22 +56,37 @@ class AuthRequestProxy(RequestProxy):
             form_data = parse_qs(data.decode("utf-8"))
             username = form_data.get("username", [""])[0]
             password = form_data.get("password", [""])[0]
-            if password and self.auth.verify(username, password):
+            if password and self.authentication.verify(username, password):
                 self.sessions.sign_in(session_id)
                 return ResponseProxy.redirect(location=path)
-        context = self.TEMPLATE.search(headers.get("Accept-Language", "en"), "login").fill()  # noqa:E501
-        content = self.TEMPLATE.seek("login.html").render(**context)
+        context = self.template.search(headers.get("Accept-Language", "en"), "login").fill()  # noqa:E501
+        content = self.template.seek("login.html").render(**context)
         response = ResponseProxy.make_ok_response(content.encode())
         return response
 
     def request(self, *args, **kwargs) -> ResponseProxy:
         return self.authenticate(*args, **kwargs) or super().request(*args, **kwargs)  # noqa:E501
 
+    @classmethod
+    def create(cls, *args, **kwargs) -> "AuthRequestProxy":
+        return cls(target_url=kwargs["target_url"],
+                   authentication=kwargs["authentication"],
+                   session_keys=kwargs["session_keys"],
+                   template=kwargs["template"])
 
-def run(listen_address: Tuple[str, int], request_proxy: AuthRequestProxy):
-    httpd = ThreadingHTTPServer(listen_address, lambda *args: HttpProxy(*args, request_proxy=request_proxy))  # noqa:E501
+
+def run(listen_address: Tuple[str, int], target_url: str,
+        auth: Optional[BasicAuth] = None, lifetime: int = 86400):
+    base: str = os.path.dirname(__file__)
+    authentication: BasicAuth = auth or AuthInit.from_file()
+    session_keys: SessionKeys = SessionKeys(lifetime=lifetime)
+    template: LocaleTemplate = LocaleTemplate(os.path.join(base, "resources"))
+    httpd = ThreadingHTTPServer(listen_address, lambda *args: HttpProxy(
+        *args, create_request_proxy=AuthRequestProxy.create,
+        target_url=target_url, authentication=authentication,
+        session_keys=session_keys, template=template))
     httpd.serve_forever()
 
 
 if __name__ == "__main__":
-    run(("0.0.0.0", 3000), AuthRequestProxy("https://example.com/"))
+    run(("0.0.0.0", 3000), "https://example.com/")
