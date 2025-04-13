@@ -17,6 +17,7 @@ from xkits_command import ArgParser
 from xkits_command import Command
 from xkits_command import CommandArgument
 from xkits_command import CommandExecutor
+from xkits_lib import TimeUnit
 from xkits_logger import Color
 from xkits_logger import Logger
 from xkits_thread import ThreadPool
@@ -36,14 +37,13 @@ from xpw_locker.attribute import __version__
 class AuthProxy():
     BASE: str = os.path.dirname(__file__)
 
-    def __init__(self, host: str, port: int,
-                 auth: Optional[BasicAuth] = None,
-                 lifetime: int = 86400):
+    def __init__(self, host: str, port: int, timeout: TimeUnit = 300,
+                 auth: Optional[BasicAuth] = None, lifetime: int = 86400):
         resources: str = os.path.join(self.BASE, "resources")
         self.__authentication: BasicAuth = auth or AuthInit.from_file()
         self.__sessions: SessionKeys = SessionKeys(lifetime=lifetime)
         self.__template: LocaleTemplate = LocaleTemplate(resources)
-        self.__proxy: SockProxy = SockProxy(host, port, 30)
+        self.__proxy: SockProxy = SockProxy(host, port, timeout)
 
     @property
     def authentication(self) -> BasicAuth:
@@ -111,16 +111,20 @@ class AuthProxy():
 
 
 def run(listen_address: Tuple[str, int], target_host: str, target_port: int,
-        auth: Optional[BasicAuth] = None, lifetime: int = 86400):
-
+        auth: Optional[BasicAuth] = None, lifetime: int = 86400,
+        timeout: TimeUnit = 600, max_workers: int = 100):
+    max_workers = max(min(10, max_workers), 1000)
     with socket(AF_INET, SOCK_STREAM) as server:
         server.bind(listen_address)
-        server.listen(50)
+        server.listen(int(max_workers / 2))
 
         Logger.stderr(Color.green(f"Server listening on {listen_address}"))
 
-        with ThreadPool(max_workers=100) as pool:
-            proxy: AuthProxy = AuthProxy(target_host, target_port, auth, lifetime)  # noqa:E501
+        with ThreadPool(max_workers=max_workers) as pool:
+            proxy: AuthProxy = AuthProxy(
+                host=target_host, port=target_port, timeout=timeout,
+                auth=auth, lifetime=lifetime
+            )
 
             while True:
                 client, _ = server.accept()
@@ -147,16 +151,30 @@ def add_cmd(_arg: ArgParser):
     _arg.add_argument("--port", type=int, dest="listen_port",
                       help="Listen port", metavar="PORT",
                       default=int(os.getenv("LISTEN_PORT", "3000")))
+    _arg.add_argument("--timeout", type=int, dest="timeout",
+                      help="Socket timeout", metavar="SECONDS",
+                      default=int(os.getenv("TIMEOUT", "600")))
+    _arg.add_argument("--max-workers", type=int, dest="max_workers",
+                      help="Maximum number of threads", metavar="THREADS",
+                      default=int(os.getenv("MAX_WORKERS", "100")))
 
 
 @CommandExecutor(add_cmd)
 def run_cmd(cmds: Command) -> int:
+    timeout: int = cmds.args.timeout
+    max_workers: int = cmds.args.max_workers
     target_host: str = cmds.args.target_host
     target_port: int = cmds.args.target_port
     lifetime: int = cmds.args.lifetime * 3600
     auth: BasicAuth = AuthInit.from_file(cmds.args.config_file)
     listen_address: Tuple[str, int] = (cmds.args.listen_address, cmds.args.listen_port)  # noqa:E501
-    run(listen_address=listen_address, target_host=target_host, target_port=target_port, auth=auth, lifetime=lifetime)  # noqa:E501
+    run(listen_address=listen_address,
+        target_host=target_host,
+        target_port=target_port,
+        auth=auth,
+        lifetime=lifetime,
+        timeout=timeout,
+        max_workers=max_workers)
     return ECANCELED
 
 
