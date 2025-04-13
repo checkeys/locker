@@ -3,7 +3,7 @@
 import unittest
 from unittest import mock
 
-from xpw_locker import server
+from xpw_locker import httpproxy
 
 
 class TestServer(unittest.TestCase):
@@ -22,11 +22,11 @@ class TestServer(unittest.TestCase):
     def tearDown(self):
         pass
 
-    @mock.patch.object(server, "ThreadingHTTPServer", mock.MagicMock())
+    @mock.patch.object(httpproxy, "ThreadingHTTPServer", mock.MagicMock())
     def test_run(self):
         listen_address = ("0.0.0.0", 8080)
-        request_proxy = server.AuthRequestProxy("https://example.com/")
-        self.assertIsNone(server.run(listen_address, request_proxy))
+        target_url = "https://example.com/"
+        self.assertIsNone(httpproxy.run(listen_address, target_url))
 
 
 if __name__ == "__main__":

@@ -17,8 +17,7 @@ from xpw import DEFAULT_CONFIG_FILE
 from xpw_locker.attribute import __description__
 from xpw_locker.attribute import __urlhome__
 from xpw_locker.attribute import __version__
-from xpw_locker.server import AuthRequestProxy
-from xpw_locker.server import run
+from xpw_locker.httpproxy import run
 
 
 @CommandArgument("locker", description=__description__)
@@ -46,8 +45,7 @@ def run_cmd(cmds: Command) -> int:
     lifetime: int = cmds.args.lifetime * 3600
     auth: BasicAuth = AuthInit.from_file(cmds.args.config_file)
     listen_address: Tuple[str, int] = (cmds.args.listen_address, cmds.args.listen_port)  # noqa:E501
-    request_proxy: AuthRequestProxy = AuthRequestProxy(target_url=target_url, lifetime=lifetime, auth=auth)  # noqa:E501
-    run(listen_address=listen_address, request_proxy=request_proxy)
+    run(listen_address=listen_address, target_url=target_url, auth=auth, lifetime=lifetime)  # noqa:E501
     return ECANCELED
 
 
