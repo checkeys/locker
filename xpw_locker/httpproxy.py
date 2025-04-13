@@ -101,7 +101,7 @@ def run(listen_address: Tuple[str, int], target_url: str,
     httpd.serve_forever()
 
 
-@CommandArgument("locker", description=__description__)
+@CommandArgument("locker-http", description=__description__)
 def add_cmd(_arg: ArgParser):
     _arg.add_argument("--config", type=str, dest="config_file",
                       help="Authentication configuration", metavar="FILE",

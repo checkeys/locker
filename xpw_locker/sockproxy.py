@@ -127,7 +127,7 @@ def run(listen_address: Tuple[str, int], target_host: str, target_port: int,
                 pool.submit(proxy.request, client)
 
 
-@CommandArgument("locker", description=__description__)
+@CommandArgument("locker-sock", description=__description__)
 def add_cmd(_arg: ArgParser):
     _arg.add_argument("--config", type=str, dest="config_file",
                       help="Authentication configuration", metavar="FILE",
