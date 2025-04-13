@@ -9,11 +9,12 @@ from xpw.authorize import Argon2Auth
 from xpw_locker import httpproxy
 
 
-class TestServer(unittest.TestCase):
+class TestCommand(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        pass
+        cls.listen_address = ("0.0.0.0", 8080)
+        cls.target_url = "https://example.com/"
 
     @classmethod
     def tearDownClass(cls):
@@ -27,26 +28,7 @@ class TestServer(unittest.TestCase):
 
     @mock.patch.object(httpproxy, "ThreadingHTTPServer", mock.MagicMock())
     def test_run(self):
-        listen_address = ("0.0.0.0", 8080)
-        target_url = "https://example.com/"
-        self.assertIsNone(httpproxy.run(listen_address, target_url))
-
-
-class TestCommand(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        pass
-
-    @classmethod
-    def tearDownClass(cls):
-        pass
-
-    def setUp(self):
-        pass
-
-    def tearDown(self):
-        pass
+        self.assertIsNone(httpproxy.run(self.listen_address, self.target_url))
 
     @mock.patch.object(httpproxy, "run")
     @mock.patch.object(httpproxy.AuthInit, "from_file")
