@@ -1,0 +1,170 @@
+# coding:utf-8
+
+from errno import ECANCELED
+import os
+from socket import AF_INET
+from socket import SOCK_STREAM
+from socket import socket
+from typing import Optional
+from typing import Sequence
+from typing import Tuple
+from urllib.parse import parse_qs
+
+from xhtml.header.headers import Cookies
+from xhtml.header.headers import Headers
+from xhtml.locale.template import LocaleTemplate
+from xkits_command import ArgParser
+from xkits_command import Command
+from xkits_command import CommandArgument
+from xkits_command import CommandExecutor
+from xkits_logger import Color
+from xkits_logger import Logger
+from xkits_thread import ThreadPool
+from xpw import AuthInit
+from xpw import BasicAuth
+from xpw import DEFAULT_CONFIG_FILE
+from xpw import SessionKeys
+from xserver.sock.header import RequestHeader
+from xserver.sock.proxy import CHUNK_SIZE
+from xserver.sock.proxy import SockProxy
+
+from xpw_locker.attribute import __description__
+from xpw_locker.attribute import __urlhome__
+from xpw_locker.attribute import __version__
+
+
+class AuthProxy():
+    BASE: str = os.path.dirname(__file__)
+
+    def __init__(self, host: str, port: int,
+                 auth: Optional[BasicAuth] = None,
+                 lifetime: int = 86400):
+        resources: str = os.path.join(self.BASE, "resources")
+        self.__authentication: BasicAuth = auth or AuthInit.from_file()
+        self.__sessions: SessionKeys = SessionKeys(lifetime=lifetime)
+        self.__template: LocaleTemplate = LocaleTemplate(resources)
+        self.__proxy: SockProxy = SockProxy(host, port, 30)
+
+    @property
+    def authentication(self) -> BasicAuth:
+        return self.__authentication
+
+    @property
+    def sessions(self) -> SessionKeys:
+        return self.__sessions
+
+    @property
+    def template(self) -> LocaleTemplate:
+        return self.__template
+
+    @property
+    def proxy(self) -> SockProxy:
+        return self.__proxy
+
+    def send_redirect(self, client: socket, location: str, session_id: Optional[str] = None):  # noqa:E501
+        client.sendall(b"HTTP/1.1 302 Found\r\n")
+        client.sendall(f"{Headers.LOCATION.value}: {location}\r\n".encode())
+        if session_id:
+            client.sendall(f"{Headers.SET_COOKIE.value}: session_id={session_id}\r\n".encode())  # noqa:E501
+        client.sendall(b"\r\n")
+        client.close()
+
+    def send_login(self, client: socket, head: RequestHeader):
+        accept_language: str = head.headers.get(Headers.ACCEPT_LANGUAGE.value, "en")  # noqa:E501
+        context = self.template.search(accept_language, "login").fill()
+        content = self.template.seek("login.html").render(**context)
+        client.sendall(f"HTTP/1.1 200 OK\r\n{Headers.CONTENT_TYPE.value}: text/html\r\n{Headers.CONTENT_LENGTH.value}: {len(content)}\r\n\r\n".encode())  # noqa:E501
+        client.sendall(content.encode())
+        client.close()
+
+    def authenticate(self, client: socket, head: RequestHeader, data: bytes) -> None:
+        if head.request_line.target == "/favicon.ico":
+            return self.proxy.new_connection(client, data)
+        cookies: Cookies = Cookies(head.headers.get(Headers.COOKIE.value, ""))
+        session_id: str = cookies.get("session_id")
+        if not session_id:
+            return self.send_redirect(client, head.request_line.target, self.sessions.search().name)  # noqa:E501
+        if self.sessions.verify(session_id):
+            return self.proxy.new_connection(client, data)
+        if head.request_line.method == "POST":
+            data = data[head.length:]
+            if dlen := len(data) - int(head.headers.get(Headers.CONTENT_LENGTH.value, "0")) > 0:  # noqa:E501
+                data += client.recv(dlen)
+            form_data = parse_qs(data.decode("utf-8"))
+            username = form_data.get("username", [""])[0]
+            password = form_data.get("password", [""])[0]
+            if password and self.authentication.verify(username, password):
+                self.sessions.sign_in(session_id)
+                return self.send_redirect(client, head.request_line.target)
+        return self.send_login(client, head)
+
+    def request(self, client: socket):
+        Logger.stderr(Color.yellow(f"Connection {client.getpeername()} connecting"))  # noqa:E501
+        data: bytes = client.recv(CHUNK_SIZE)
+        head = RequestHeader.parse(data)
+        if head is not None:
+            Logger.stderr(f"{head.request_line.method} {head.request_line.target}")  # noqa:E501
+            self.authenticate(client, head, data)
+        else:
+            Logger.stderr(Color.red(f"Invalid request: {data}"))
+            client.close()
+
+
+def run(listen_address: Tuple[str, int], target_host: str, target_port: int,
+        auth: Optional[BasicAuth] = None, lifetime: int = 86400):
+
+    with socket(AF_INET, SOCK_STREAM) as server:
+        server.bind(listen_address)
+        server.listen(50)
+
+        Logger.stderr(Color.green(f"Server listening on {listen_address}"))
+
+        with ThreadPool(max_workers=100) as pool:
+            proxy: AuthProxy = AuthProxy(target_host, target_port, auth, lifetime)  # noqa:E501
+
+            while True:
+                client, _ = server.accept()
+                pool.submit(proxy.request, client)
+
+
+@CommandArgument("locker", description=__description__)
+def add_cmd(_arg: ArgParser):
+    _arg.add_argument("--config", type=str, dest="config_file",
+                      help="Authentication configuration", metavar="FILE",
+                      default=os.getenv("CONFIG_FILE", DEFAULT_CONFIG_FILE))
+    _arg.add_argument("--expires", type=int, dest="lifetime",
+                      help="Session login interval hours", metavar="HOUR",
+                      default=int(os.getenv("EXPIRES", "1")))
+    _arg.add_argument("--target-host", type=str, dest="target_host",
+                      help="Proxy target host", metavar="HOST",
+                      default=os.getenv("TARGET_HOST", "localhost"))
+    _arg.add_argument("--target-port", type=int, dest="target_port",
+                      help="Proxy target port", metavar="PORT",
+                      default=int(os.getenv("TARGET_PORT", "80")))
+    _arg.add_argument("--host", type=str, dest="listen_address",
+                      help="Listen address", metavar="ADDR",
+                      default=os.getenv("LISTEN_ADDRESS", "0.0.0.0"))
+    _arg.add_argument("--port", type=int, dest="listen_port",
+                      help="Listen port", metavar="PORT",
+                      default=int(os.getenv("LISTEN_PORT", "3000")))
+
+
+@CommandExecutor(add_cmd)
+def run_cmd(cmds: Command) -> int:
+    target_host: str = cmds.args.target_host
+    target_port: int = cmds.args.target_port
+    lifetime: int = cmds.args.lifetime * 3600
+    auth: BasicAuth = AuthInit.from_file(cmds.args.config_file)
+    listen_address: Tuple[str, int] = (cmds.args.listen_address, cmds.args.listen_port)  # noqa:E501
+    run(listen_address=listen_address, target_host=target_host, target_port=target_port, auth=auth, lifetime=lifetime)  # noqa:E501
+    return ECANCELED
+
+
+def main(argv: Optional[Sequence[str]] = None) -> int:
+    cmds = Command()
+    cmds.version = __version__
+    return cmds.run(root=add_cmd, argv=argv, epilog=f"For more, please visit {__urlhome__}.")  # noqa:E501
+
+
+if __name__ == "__main__":
+    run(("0.0.0.0", 3000), "example.com", 80)
