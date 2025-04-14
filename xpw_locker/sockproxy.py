@@ -110,8 +110,8 @@ class AuthProxy():
             else:
                 Logger.stderr(Color.red(f"Invalid request: {data}"))
 
-        except Exception:
-            import traceback
+        except Exception:  # pylint:disable=broad-exception-caught
+            import traceback  # pylint:disable=import-outside-toplevel
 
             Logger.stderr(Color.red(traceback.format_exc()))
 
