@@ -17,4 +17,4 @@ RUN pip install --no-cache-dir *.whl
 
 EXPOSE 3000
 
-CMD ["locker", "--stdout", "--debug"]
+CMD ["locker-sock", "--stdout", "--debug"]
