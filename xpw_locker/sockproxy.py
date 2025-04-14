@@ -97,13 +97,14 @@ class AuthProxy():
                 return self.send_redirect(client, head.request_line.target)
         return self.send_login(client, head)
 
-    def request(self, client: socket):
-        Logger.stderr(Color.yellow(f"Connection {client.getpeername()} connecting"))  # noqa:E501
+    def request(self, client: socket, address: Tuple[str, int]):
+        Logger.stderr(Color.yellow(f"Connection {address} connecting"))
         data: bytes = client.recv(1048576)  # 1MiB
         head = RequestHeader.parse(data)
         if head is not None:
             Logger.stderr(f"{head.request_line.method} {head.request_line.target}")  # noqa:E501
             self.authenticate(client, head, data)
+            Logger.stderr(Color.red(f"Connection {address} connected"))
         else:
             Logger.stderr(Color.red(f"Invalid request: {data}"))
             client.close()
@@ -126,8 +127,8 @@ def run(listen_address: Tuple[str, int], target_host: str, target_port: int,
             )
 
             while True:
-                client, _ = server.accept()
-                pool.submit(proxy.request, client)
+                client, address = server.accept()
+                pool.submit(proxy.request, client, address)
 
 
 @CommandArgument("locker-sock", description=__description__)
