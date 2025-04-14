@@ -124,7 +124,7 @@ def run(listen_address: Tuple[str, int],  # pylint:disable=R0913,R0917
         target_host: str, target_port: int,
         auth: Optional[BasicAuth] = None,
         lifetime: int = 86400,
-        timeout: TimeUnit = 600,
+        timeout: TimeUnit = 10,
         max_workers: int = 100):
     max_workers = max(min(10, max_workers), 1000)
     with socket(AF_INET, SOCK_STREAM) as server:
@@ -167,7 +167,7 @@ def add_cmd(_arg: ArgParser):
                       default=int(os.getenv("LISTEN_PORT", "3000")))
     _arg.add_argument("--timeout", type=int, dest="timeout",
                       help="Socket timeout", metavar="SECONDS",
-                      default=int(os.getenv("TIMEOUT", "600")))
+                      default=int(os.getenv("TIMEOUT", "5")))
     _arg.add_argument("--max-workers", type=int, dest="max_workers",
                       help="Maximum number of threads", metavar="THREADS",
                       default=int(os.getenv("MAX_WORKERS", "100")))
@@ -199,4 +199,4 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
 
 
 if __name__ == "__main__":
-    run(("0.0.0.0", 3000), "example.com", 80)
+    run(("0.0.0.0", 3000), "example.com", 80, timeout=3)
