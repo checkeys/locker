@@ -36,8 +36,9 @@ from xpw_locker.attribute import __version__
 class AuthProxy():
     BASE: str = os.path.dirname(__file__)
 
-    def __init__(self, host: str, port: int, timeout: TimeUnit = 300,
-                 auth: Optional[BasicAuth] = None, lifetime: int = 86400):
+    def __init__(self, host: str, port: int,  # pylint:disable=R0913,R0917
+                 timeout: TimeUnit = 300, lifetime: int = 86400,
+                 auth: Optional[BasicAuth] = None):
         resources: str = os.path.join(self.BASE, "resources")
         self.__authentication: BasicAuth = auth or AuthInit.from_file()
         self.__sessions: SessionKeys = SessionKeys(lifetime=lifetime)
@@ -110,9 +111,12 @@ class AuthProxy():
             client.close()
 
 
-def run(listen_address: Tuple[str, int], target_host: str, target_port: int,
-        auth: Optional[BasicAuth] = None, lifetime: int = 86400,
-        timeout: TimeUnit = 600, max_workers: int = 100):
+def run(listen_address: Tuple[str, int],  # pylint:disable=R0913,R0917
+        target_host: str, target_port: int,
+        auth: Optional[BasicAuth] = None,
+        lifetime: int = 86400,
+        timeout: TimeUnit = 600,
+        max_workers: int = 100):
     max_workers = max(min(10, max_workers), 1000)
     with socket(AF_INET, SOCK_STREAM) as server:
         server.bind(listen_address)
@@ -122,8 +126,9 @@ def run(listen_address: Tuple[str, int], target_host: str, target_port: int,
 
         with ThreadPool(max_workers=max_workers) as pool:
             proxy: AuthProxy = AuthProxy(
-                host=target_host, port=target_port, timeout=timeout,
-                auth=auth, lifetime=lifetime
+                host=target_host, port=target_port,
+                timeout=timeout, lifetime=lifetime,
+                auth=auth
             )
 
             while True:

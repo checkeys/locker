@@ -5,3 +5,4 @@ disable=
     C0115,   # missing-class-docstring
     C0116,   # missing-function-docstring
     C0301,   # line-too-long
+    R0801,   # Similar lines
