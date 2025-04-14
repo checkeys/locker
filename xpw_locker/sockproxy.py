@@ -67,7 +67,6 @@ class AuthProxy():
         if session_id:
             client.sendall(f"{Headers.SET_COOKIE.value}: session_id={session_id}\r\n".encode())  # noqa:E501
         client.sendall(b"\r\n")
-        client.close()
 
     def send_login(self, client: socket, head: RequestHeader):
         accept_language: str = head.headers.get(Headers.ACCEPT_LANGUAGE.value, "en")  # noqa:E501
@@ -75,9 +74,8 @@ class AuthProxy():
         content = self.template.seek("login.html").render(**context)
         client.sendall(f"HTTP/1.1 200 OK\r\n{Headers.CONTENT_TYPE.value}: text/html\r\n{Headers.CONTENT_LENGTH.value}: {len(content)}\r\n\r\n".encode())  # noqa:E501
         client.sendall(content.encode())
-        client.close()
 
-    def authenticate(self, client: socket, head: RequestHeader, data: bytes) -> None:
+    def authenticate(self, client: socket, head: RequestHeader, data: bytes):
         if head.request_line.target == "/favicon.ico":
             return self.proxy.new_connection(client, data)
         cookies: Cookies = Cookies(head.headers.get(Headers.COOKIE.value, ""))
@@ -100,15 +98,26 @@ class AuthProxy():
 
     def request(self, client: socket, address: Tuple[str, int]):
         Logger.stderr(Color.yellow(f"Connection {address} connecting"))
-        data: bytes = client.recv(1048576)  # 1MiB
-        head = RequestHeader.parse(data)
-        if head is not None:
-            Logger.stderr(f"{head.request_line.method} {head.request_line.target}")  # noqa:E501
-            self.authenticate(client, head, data)
-            Logger.stderr(Color.red(f"Connection {address} connected"))
-        else:
-            Logger.stderr(Color.red(f"Invalid request: {data}"))
-            client.close()
+
+        try:
+            data: bytes = client.recv(1048576)  # 1MiB
+            head = RequestHeader.parse(data)
+
+            if head is not None:
+                Logger.stderr(f"{head.request_line.method} {head.request_line.target}")  # noqa:E501
+                self.authenticate(client, head, data)
+                Logger.stderr(Color.red(f"Connection {address} connected"))
+            else:
+                Logger.stderr(Color.red(f"Invalid request: {data}"))
+
+        except Exception:
+            import traceback
+
+            Logger.stderr(Color.red(traceback.format_exc()))
+
+        finally:
+            if client.fileno() >= 0:
+                client.close()
 
 
 def run(listen_address: Tuple[str, int],  # pylint:disable=R0913,R0917
