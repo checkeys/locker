@@ -26,7 +26,6 @@ from xpw import BasicAuth
 from xpw import DEFAULT_CONFIG_FILE
 from xpw import SessionKeys
 from xserver.sock.header import RequestHeader
-from xserver.sock.proxy import CHUNK_SIZE
 from xserver.sock.proxy import SockProxy
 
 from xpw_locker.attribute import __description__
@@ -100,7 +99,7 @@ class AuthProxy():
 
     def request(self, client: socket):
         Logger.stderr(Color.yellow(f"Connection {client.getpeername()} connecting"))  # noqa:E501
-        data: bytes = client.recv(CHUNK_SIZE)
+        data: bytes = client.recv(1048576)  # 1MiB
         head = RequestHeader.parse(data)
         if head is not None:
             Logger.stderr(f"{head.request_line.method} {head.request_line.target}")  # noqa:E501
