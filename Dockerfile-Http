@@ -1,0 +1,15 @@
+FROM python:3.9-slim as runner
+
+ARG VERSION
+
+LABEL version=$VERSION
+
+WORKDIR /app
+
+COPY ./xpwauth .
+
+RUN pip install --no-cache-dir xpw-locker==$VERSION
+
+EXPOSE 3000
+
+CMD ["locker-http", "--stdout", "--debug"]
