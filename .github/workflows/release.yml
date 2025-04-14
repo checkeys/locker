@@ -74,6 +74,6 @@ jobs:
           cache-to: type=local,dest=/tmp/.buildx-cache
           platforms: linux/amd64, linux/arm64
           build-args: |
-            VERSION=${{ steps.meta.outputs.version }}
+            VERSION={{version}}
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }}
