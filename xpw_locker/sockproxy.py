@@ -86,7 +86,7 @@ class AuthProxy():
             return self.proxy.new_connection(client, data)
         if head.request_line.method == "POST":
             data = data[head.length:]
-            if dlen := len(data) - int(head.headers.get(Headers.CONTENT_LENGTH.value, "0")) > 0:  # noqa:E501
+            if (dlen := int(head.headers.get(Headers.CONTENT_LENGTH.value, "0")) - len(data)) > 0:  # noqa:E501
                 data += client.recv(dlen)
             form_data = parse_qs(data.decode("utf-8"))
             username = form_data.get("username", [""])[0]
