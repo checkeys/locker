@@ -1,12 +1,62 @@
 # coding:utf-8
 
 from errno import ECANCELED
+import os
 import unittest
 from unittest import mock
 
 from xpw.authorize import Argon2Auth
 
 from xpw_locker import httpproxy
+
+
+class TestAuthRequestProxy(unittest.TestCase):
+    BASE: str = os.path.dirname(os.path.dirname(__file__))
+
+    @classmethod
+    def setUpClass(cls):
+        cls.target_url = "https://example.com/"
+        cls.resources = os.path.join(cls.BASE, "resources")
+
+    @classmethod
+    def tearDownClass(cls):
+        pass
+
+    def setUp(self):
+        self.authentication = mock.MagicMock()
+        self.session_keys = httpproxy.SessionKeys()
+        self.template = httpproxy.LocaleTemplate(self.resources)
+        self.proxy = httpproxy.AuthRequestProxy.create(
+            target_url=self.target_url,
+            authentication=self.authentication,
+            session_keys=self.session_keys,
+            template=self.template,
+        )
+
+    def tearDown(self):
+        pass
+
+    def test_authenticate_favicon(self):
+        self.assertIsNone(self.proxy.authenticate("/favicon.ico", "GET", b"", {}))  # noqa:E501
+
+    def test_authenticate_session_id(self):
+        self.assertIsInstance(self.proxy.authenticate("/", "GET", b"", {}), httpproxy.ResponseProxy)  # noqa:E501
+
+    def test_authenticate_verify(self):
+        self.session_keys.sign_in("test")
+        self.assertIsNone(self.proxy.authenticate("/", "GET", b"", {"Cookie": "session_id=test"}))  # noqa:E501
+
+    def test_authenticate_post_login(self):
+        self.assertIsInstance(self.proxy.authenticate("/", "POST", b"username=demo&password=test", {"Cookie": "session_id=test"}), httpproxy.ResponseProxy)  # noqa:E501
+
+    def test_authenticate_get_login(self):
+        self.assertIsInstance(self.proxy.authenticate("/", "GET", b"", {"Cookie": "session_id=test"}), httpproxy.ResponseProxy)  # noqa:E501
+
+    def test_request_authenticate(self):
+        with mock.patch.object(self.proxy, "authenticate") as mock_auth:
+            fake_auth = mock.MagicMock()
+            mock_auth.side_effect = [fake_auth]
+            self.assertIs(self.proxy.request(), fake_auth)
 
 
 class TestCommand(unittest.TestCase):
