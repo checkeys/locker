@@ -106,7 +106,7 @@ class AuthProxy():
             if head is not None:
                 Logger.stderr(f"{head.request_line.method} {head.request_line.target}")  # noqa:E501
                 self.authenticate(client, head, data)
-                Logger.stderr(Color.red(f"Connection {address} connected"))
+                Logger.stderr(Color.red(f"Connection {address} closed"))
             else:
                 Logger.stderr(Color.red(f"Invalid request: {data}"))
 
