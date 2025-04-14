@@ -55,8 +55,8 @@ class AuthRequestProxy(RequestProxy):
                      ) -> Optional[ResponseProxy]:
         if path == "/favicon.ico":
             return None
-        if "localhost" in headers.get(Headers.HOST.value, ""):
-            return None
+        # if "localhost" in headers.get(Headers.HOST.value, ""):
+        #     return None
         cookies: Cookies = Cookies(headers.get(Headers.COOKIE.value, ""))
         session_id: str = cookies.get("session_id")
         if not session_id:
