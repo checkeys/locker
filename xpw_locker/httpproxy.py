@@ -19,6 +19,7 @@ from xkits_command import CommandExecutor
 from xpw import AuthInit
 from xpw import BasicAuth
 from xpw import DEFAULT_CONFIG_FILE
+from xpw import Pass
 from xpw import SessionKeys
 from xserver.http.proxy import HttpProxy
 from xserver.http.proxy import RequestProxy
@@ -32,9 +33,12 @@ from xpw_locker.attribute import __version__
 
 class AuthRequestProxy(RequestProxy):
 
-    def __init__(self, target_url: str, authentication: BasicAuth,
-                 session_keys: SessionKeys, template: LocaleTemplate):
+    def __init__(self,  # pylint:disable=R0913,R0917
+                 target_url: str, authentication: BasicAuth,
+                 session_keys: SessionKeys, template: LocaleTemplate,
+                 api_token: Optional[str] = None):
         self.__authentication: BasicAuth = authentication
+        self.__api_token: Optional[str] = api_token
         self.__sessions: SessionKeys = session_keys
         self.__template: LocaleTemplate = template
         super().__init__(target_url)
@@ -44,6 +48,10 @@ class AuthRequestProxy(RequestProxy):
         return self.__authentication
 
     @property
+    def api_token(self) -> Optional[str]:
+        return self.__api_token
+
+    @property
     def sessions(self) -> SessionKeys:
         return self.__sessions
 
@@ -51,7 +59,7 @@ class AuthRequestProxy(RequestProxy):
     def template(self) -> LocaleTemplate:
         return self.__template
 
-    def authenticate(self, path: str,  # pylint:disable=too-many-locals
+    def authenticate(self, path: str,  # pylint:disable=R0911,R0912,R0914
                      method: str, data: bytes,
                      headers: MutableMapping[str, str]
                      ) -> Optional[ResponseProxy]:
@@ -70,6 +78,14 @@ class AuthRequestProxy(RequestProxy):
             if auth.type == Authorization.Basic.TYPE:
                 assert isinstance(auth, Authorization.Basic)
                 if self.authentication.verify(auth.username, auth.password):
+                    return None  # verified
+            elif auth.type == Authorization.Bearer.TYPE:
+                assert isinstance(auth, Authorization.Bearer)
+                if self.api_token and auth.token == self.api_token:
+                    return None  # verified
+            elif auth.type == Authorization.APIKey.TYPE:
+                assert isinstance(auth, Authorization.APIKey)
+                if self.api_token and auth.key == self.api_token:
                     return None  # verified
 
         cookies: Cookies = Cookies(headers.get(Headers.COOKIE.value, ""))
@@ -109,11 +125,13 @@ class AuthRequestProxy(RequestProxy):
         return cls(target_url=kwargs["target_url"],
                    authentication=kwargs["authentication"],
                    session_keys=kwargs["session_keys"],
-                   template=kwargs["template"])
+                   template=kwargs["template"],
+                   api_token=kwargs.get("api_token"))
 
 
 def run(listen_address: Tuple[str, int], target_url: str,
-        auth: Optional[BasicAuth] = None, lifetime: int = 86400):
+        auth: Optional[BasicAuth] = None, token: Optional[str] = None,
+        lifetime: int = 86400):
     base: str = os.path.dirname(__file__)
     authentication: BasicAuth = auth or AuthInit.from_file()
     session_keys: SessionKeys = SessionKeys(lifetime=lifetime)
@@ -121,7 +139,7 @@ def run(listen_address: Tuple[str, int], target_url: str,
     httpd = ThreadingHTTPServer(listen_address, lambda *args: HttpProxy(
         *args, create_request_proxy=AuthRequestProxy.create,
         target_url=target_url, authentication=authentication,
-        session_keys=session_keys, template=template))
+        session_keys=session_keys, template=template, api_token=token))
     httpd.serve_forever()
 
 
@@ -142,6 +160,9 @@ def add_cmd(_arg: ArgParser):
     _arg.add_argument("--port", type=int, dest="listen_port",
                       help="Listen port", metavar="PORT",
                       default=int(os.getenv("LISTEN_PORT", "3000")))
+    _arg.add_argument("--key", type=str, dest="api_token",
+                      help="API key", metavar="KEY",
+                      default=os.getenv("API_KEY"))
 
 
 @CommandExecutor(add_cmd)
@@ -150,7 +171,12 @@ def run_cmd(cmds: Command) -> int:
     lifetime: int = cmds.args.lifetime * 3600
     auth: BasicAuth = AuthInit.from_file(cmds.args.config_file)
     listen_address: Tuple[str, int] = (cmds.args.listen_address, cmds.args.listen_port)  # noqa:E501
-    run(listen_address=listen_address, target_url=target_url, auth=auth, lifetime=lifetime)  # noqa:E501
+    api_token: str = cmds.args.api_token or Pass.random_generate(32, Pass.CharacterSet.BASIC).value  # noqa:E501
+    cmds.logger.info(f"API key: {api_token}")
+    run(listen_address=listen_address,
+        target_url=target_url,
+        auth=auth, token=api_token,
+        lifetime=lifetime)
     return ECANCELED
 
 

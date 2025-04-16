@@ -31,6 +31,7 @@ class TestAuthRequestProxy(unittest.TestCase):
             authentication=self.authentication,
             session_keys=self.session_keys,
             template=self.template,
+            api_token="test",
         )
 
     def tearDown(self):
@@ -42,6 +43,12 @@ class TestAuthRequestProxy(unittest.TestCase):
     def test_authenticate_basic_authorization(self):
         self.authentication.verify.side_effect = ["test"]
         self.assertIsNone(self.proxy.authenticate("/", "GET", b"", {"Authorization": "Basic ZGVtbzp0ZXN0"}))  # noqa:E501
+
+    def test_authenticate_bearer_authorization(self):
+        self.assertIsNone(self.proxy.authenticate("/", "GET", b"", {"Authorization": "Bearer test"}))  # noqa:E501
+
+    def test_authenticate_apikey_authorization(self):
+        self.assertIsNone(self.proxy.authenticate("/", "GET", b"", {"Authorization": "ApiKey test"}))  # noqa:E501
 
     def test_authenticate_session_id(self):
         self.assertIsInstance(self.proxy.authenticate("/", "GET", b"", {}), httpproxy.ResponseProxy)  # noqa:E501

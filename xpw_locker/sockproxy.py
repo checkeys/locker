@@ -24,6 +24,7 @@ from xkits_thread import ThreadPool
 from xpw import AuthInit
 from xpw import BasicAuth
 from xpw import DEFAULT_CONFIG_FILE
+from xpw import Pass
 from xpw import SessionKeys
 from xserver.sock.header import RequestHeader
 from xserver.sock.proxy import SockProxy
@@ -39,16 +40,22 @@ class AuthProxy():
 
     def __init__(self, host: str, port: int,  # pylint:disable=R0913,R0917
                  timeout: TimeUnit = 300, lifetime: int = 86400,
-                 auth: Optional[BasicAuth] = None):
+                 auth: Optional[BasicAuth] = None,
+                 token: Optional[str] = None):
         resources: str = os.path.join(self.BASE, "resources")
         self.__authentication: BasicAuth = auth or AuthInit.from_file()
         self.__sessions: SessionKeys = SessionKeys(lifetime=lifetime)
         self.__template: LocaleTemplate = LocaleTemplate(resources)
         self.__proxy: SockProxy = SockProxy(host, port, timeout)
+        self.__token: Optional[str] = token
 
     @property
     def authentication(self) -> BasicAuth:
         return self.__authentication
+
+    @property
+    def api_token(self) -> Optional[str]:
+        return self.__token
 
     @property
     def sessions(self) -> SessionKeys:
@@ -73,7 +80,7 @@ class AuthProxy():
         client.sendall(f"HTTP/1.1 200 OK\r\n{Headers.CONTENT_TYPE.value}: text/html\r\n{Headers.CONTENT_LENGTH.value}: {len(content)}\r\n\r\n".encode())  # noqa:E501
         client.sendall(content.encode())
 
-    def authenticate(self, client: socket, head: RequestHeader, data: bytes):  # noqa:501 pylint:disable=too-many-locals
+    def authenticate(self, client: socket, head: RequestHeader, data: bytes):  # noqa:501 pylint:disable=R0911,R0912,R0914
         if head.request_line.target == "/favicon.ico":
             return self.proxy.new_connection(client, data)
 
@@ -86,6 +93,14 @@ class AuthProxy():
             if auth.type == Authorization.Basic.TYPE:
                 assert isinstance(auth, Authorization.Basic)
                 if self.authentication.verify(auth.username, auth.password):
+                    return self.proxy.new_connection(client, data)  # verified
+            elif auth.type == Authorization.Bearer.TYPE:
+                assert isinstance(auth, Authorization.Bearer)
+                if self.api_token and auth.token == self.api_token:
+                    return self.proxy.new_connection(client, data)  # verified
+            elif auth.type == Authorization.APIKey.TYPE:
+                assert isinstance(auth, Authorization.APIKey)
+                if self.api_token and auth.key == self.api_token:
                     return self.proxy.new_connection(client, data)  # verified
 
         cookies: Cookies = Cookies(head.headers.get(Headers.COOKIE.value, ""))
@@ -145,6 +160,7 @@ class AuthProxy():
 def run(listen_address: Tuple[str, int],  # pylint:disable=R0913,R0917
         target_host: str, target_port: int,
         auth: Optional[BasicAuth] = None,
+        token: Optional[str] = None,
         lifetime: int = 86400,
         timeout: TimeUnit = 10,
         max_workers: int = 100):
@@ -159,7 +175,7 @@ def run(listen_address: Tuple[str, int],  # pylint:disable=R0913,R0917
             proxy: AuthProxy = AuthProxy(
                 host=target_host, port=target_port,
                 timeout=timeout, lifetime=lifetime,
-                auth=auth
+                auth=auth, token=token
             )
 
             while True:
@@ -187,6 +203,9 @@ def add_cmd(_arg: ArgParser):
     _arg.add_argument("--port", type=int, dest="listen_port",
                       help="Listen port", metavar="PORT",
                       default=int(os.getenv("LISTEN_PORT", "3000")))
+    _arg.add_argument("--key", type=str, dest="api_token",
+                      help="API key", metavar="KEY",
+                      default=os.getenv("API_KEY"))
     _arg.add_argument("--timeout", type=int, dest="timeout",
                       help="Socket timeout", metavar="SECONDS",
                       default=int(os.getenv("TIMEOUT", "5")))
@@ -204,10 +223,12 @@ def run_cmd(cmds: Command) -> int:
     lifetime: int = cmds.args.lifetime * 3600
     auth: BasicAuth = AuthInit.from_file(cmds.args.config_file)
     listen_address: Tuple[str, int] = (cmds.args.listen_address, cmds.args.listen_port)  # noqa:E501
+    api_token: str = cmds.args.api_token or Pass.random_generate(32, Pass.CharacterSet.BASIC).value  # noqa:E501
+    cmds.logger.info(f"API key: {api_token}")
     run(listen_address=listen_address,
         target_host=target_host,
         target_port=target_port,
-        auth=auth,
+        auth=auth, token=api_token,
         lifetime=lifetime,
         timeout=timeout,
         max_workers=max_workers)

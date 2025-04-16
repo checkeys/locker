@@ -21,7 +21,7 @@ class TestAuthProxy(unittest.TestCase):
         pass
 
     def setUp(self):
-        self.proxy = sockproxy.AuthProxy(self.target_host, self.target_port)
+        self.proxy = sockproxy.AuthProxy(self.target_host, self.target_port, token="test")  # noqa:E501
 
     def tearDown(self):
         pass
@@ -50,6 +50,38 @@ class TestAuthProxy(unittest.TestCase):
             fake_new_connection = mock.MagicMock()
             mock_new_connection.side_effect = [fake_new_connection]
             head = sockproxy.RequestHeader.parse(b"GET / HTTP/1.1\r\nAuthorization: Basic ZGVtbzp0ZXN0\r\n\r\n")  # noqa:E501
+            self.assertIsInstance(head, sockproxy.RequestHeader)
+            assert isinstance(head, sockproxy.RequestHeader)
+            with mock.patch.object(self.proxy.authentication, "verify") as mock_verify:  # noqa:E501
+                mock_verify.side_effect = [True]
+                self.assertIs(self.proxy.authenticate(client=client, head=head, data=b"test"), fake_new_connection)  # noqa:E501
+
+    @mock.patch.object(sockproxy, "socket")
+    def test_authenticate_bearer_authorization(self, mock_socket):
+        fake_socket = mock.MagicMock()
+        mock_socket.side_effect = [fake_socket]
+        client = sockproxy.socket()
+        self.assertIs(client, fake_socket)
+        with mock.patch.object(self.proxy.proxy, "new_connection") as mock_new_connection:  # noqa:E501
+            fake_new_connection = mock.MagicMock()
+            mock_new_connection.side_effect = [fake_new_connection]
+            head = sockproxy.RequestHeader.parse(b"GET / HTTP/1.1\r\nAuthorization: Bearer test\r\n\r\n")  # noqa:E501
+            self.assertIsInstance(head, sockproxy.RequestHeader)
+            assert isinstance(head, sockproxy.RequestHeader)
+            with mock.patch.object(self.proxy.authentication, "verify") as mock_verify:  # noqa:E501
+                mock_verify.side_effect = [True]
+                self.assertIs(self.proxy.authenticate(client=client, head=head, data=b"test"), fake_new_connection)  # noqa:E501
+
+    @mock.patch.object(sockproxy, "socket")
+    def test_authenticate_apikey_authorization(self, mock_socket):
+        fake_socket = mock.MagicMock()
+        mock_socket.side_effect = [fake_socket]
+        client = sockproxy.socket()
+        self.assertIs(client, fake_socket)
+        with mock.patch.object(self.proxy.proxy, "new_connection") as mock_new_connection:  # noqa:E501
+            fake_new_connection = mock.MagicMock()
+            mock_new_connection.side_effect = [fake_new_connection]
+            head = sockproxy.RequestHeader.parse(b"GET / HTTP/1.1\r\nAuthorization: ApiKey test\r\n\r\n")  # noqa:E501
             self.assertIsInstance(head, sockproxy.RequestHeader)
             assert isinstance(head, sockproxy.RequestHeader)
             with mock.patch.object(self.proxy.authentication, "verify") as mock_verify:  # noqa:E501
