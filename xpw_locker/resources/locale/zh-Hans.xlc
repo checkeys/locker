@@ -3,7 +3,7 @@ language = "zh-Hans"
 [login]
 language = "zh-Hans"
 title = "登录"
-input_prompt = "密码登录"
+input_prompt = "访问认证"
 input_username_placeholder = "用户"
 input_password_placeholder = "密码"
 input_submit_value = "登录"
