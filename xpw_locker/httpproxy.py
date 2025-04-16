@@ -66,15 +66,22 @@ class AuthRequestProxy(RequestProxy):
             return response
         if self.sessions.verify(session_id):
             return None  # logged
+
+        input_error_prompt: str = ""
+        section = self.template.search(headers.get("Accept-Language", "en"), "login")  # noqa:E501
         if method == "POST":
             form_data = parse_qs(data.decode("utf-8"))
             username = form_data.get("username", [""])[0]
             password = form_data.get("password", [""])[0]
-            if password and self.authentication.verify(username, password):
+            if not password:
+                input_error_prompt = section.get("input_password_is_null")
+            elif self.authentication.verify(username, password):
                 self.sessions.sign_in(session_id)
                 return ResponseProxy.redirect(location=path)
-        section = self.template.search(headers.get("Accept-Language", "en"), "login")  # noqa:E501
+            else:
+                input_error_prompt = section.get("input_verify_error")
         context = section.fill(name=__official_name__, version=__version__)
+        context.setdefault("input_error_prompt", input_error_prompt)
         context.setdefault("url", __urlhome__)
         content = self.template.seek("login.html").render(**context)
         response = ResponseProxy.make_ok_response(content.encode())

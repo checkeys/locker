@@ -69,12 +69,7 @@ class AuthProxy():
             client.sendall(f"{Headers.SET_COOKIE.value}: session_id={session_id}\r\n".encode())  # noqa:E501
         client.sendall(b"\r\n")
 
-    def send_login(self, client: socket, head: RequestHeader):
-        accept_language: str = head.headers.get(Headers.ACCEPT_LANGUAGE.value, "en")  # noqa:E501
-        section = self.template.search(accept_language, "login")
-        context = section.fill(name=__official_name__, version=__version__)
-        context.setdefault("url", __urlhome__)
-        content = self.template.seek("login.html").render(**context)
+    def send_html(self, client: socket, content: str):
         client.sendall(f"HTTP/1.1 200 OK\r\n{Headers.CONTENT_TYPE.value}: text/html\r\n{Headers.CONTENT_LENGTH.value}: {len(content)}\r\n\r\n".encode())  # noqa:E501
         client.sendall(content.encode())
 
@@ -87,6 +82,10 @@ class AuthProxy():
             return self.send_redirect(client, head.request_line.target, self.sessions.search().name)  # noqa:E501
         if self.sessions.verify(session_id):
             return self.proxy.new_connection(client, data)
+
+        input_error_prompt: str = ""
+        accept_language: str = head.headers.get(Headers.ACCEPT_LANGUAGE.value, "en")  # noqa:E501
+        section = self.template.search(accept_language, "login")
         if head.request_line.method == "POST":
             data = data[head.length:]
             if (dlen := int(head.headers.get(Headers.CONTENT_LENGTH.value, "0")) - len(data)) > 0:  # noqa:E501
@@ -94,10 +93,18 @@ class AuthProxy():
             form_data = parse_qs(data.decode("utf-8"))
             username = form_data.get("username", [""])[0]
             password = form_data.get("password", [""])[0]
-            if password and self.authentication.verify(username, password):
+            if not password:
+                input_error_prompt = section.get("input_password_is_null")
+            elif self.authentication.verify(username, password):
                 self.sessions.sign_in(session_id)
                 return self.send_redirect(client, head.request_line.target)
-        return self.send_login(client, head)
+            else:
+                input_error_prompt = section.get("input_verify_error")
+        context = section.fill(name=__official_name__, version=__version__)
+        context.setdefault("input_error_prompt", input_error_prompt)
+        context.setdefault("url", __urlhome__)
+        content = self.template.seek("login.html").render(**context)
+        return self.send_html(client, content)
 
     def request(self, client: socket, address: Tuple[str, int]):
         Logger.stderr(Color.yellow(f"Connection {address} connecting"))
