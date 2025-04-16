@@ -46,7 +46,15 @@ class TestAuthRequestProxy(unittest.TestCase):
         self.session_keys.sign_in("test")
         self.assertIsNone(self.proxy.authenticate("/", "GET", b"", {"Cookie": "session_id=test"}))  # noqa:E501
 
+    def test_authenticate_post_login_password_null(self):
+        self.assertIsInstance(self.proxy.authenticate("/", "POST", b"username=demo&password=", {"Cookie": "session_id=test"}), httpproxy.ResponseProxy)  # noqa:E501
+
+    def test_authenticate_post_login_password_error(self):
+        self.authentication.verify.side_effect = [None]
+        self.assertIsInstance(self.proxy.authenticate("/", "POST", b"username=demo&password=test", {"Cookie": "session_id=test"}), httpproxy.ResponseProxy)  # noqa:E501
+
     def test_authenticate_post_login(self):
+        self.authentication.verify.side_effect = ["test"]
         self.assertIsInstance(self.proxy.authenticate("/", "POST", b"username=demo&password=test", {"Cookie": "session_id=test"}), httpproxy.ResponseProxy)  # noqa:E501
 
     def test_authenticate_get_login(self):

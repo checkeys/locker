@@ -68,6 +68,23 @@ class TestAuthProxy(unittest.TestCase):
                 self.assertIs(self.proxy.authenticate(client=client, head=head, data=b"test"), fake_new_connection)  # noqa:E501
 
     @mock.patch.object(sockproxy, "socket")
+    def test_authenticate_post_login_password_null(self, mock_socket):
+        fake_socket = mock.MagicMock()
+        fake_socket.recv.side_effect = [b"username=demo&password="]
+        mock_socket.side_effect = [fake_socket]
+        client = sockproxy.socket()
+        self.assertIs(client, fake_socket)
+        data = b"POST / HTTP/1.1\r\nContent-Length: 23\r\nCookie: session_id=123456\r\n\r\n"  # noqa:E501
+        head = sockproxy.RequestHeader.parse(data)  # noqa:E501
+        self.assertIsInstance(head, sockproxy.RequestHeader)
+        assert isinstance(head, sockproxy.RequestHeader)
+        with mock.patch.object(self.proxy.sessions, "verify") as mock_verify1:
+            mock_verify1.side_effect = [False]
+            with mock.patch.object(self.proxy.authentication, "verify") as mock_verify2:  # noqa:E501
+                mock_verify2.side_effect = [True]
+                self.assertIsNone(self.proxy.authenticate(client=client, head=head, data=data))  # noqa:E501
+
+    @mock.patch.object(sockproxy, "socket")
     def test_authenticate_post_login(self, mock_socket):
         fake_socket = mock.MagicMock()
         fake_socket.recv.side_effect = [b"username=demo&password=test"]
