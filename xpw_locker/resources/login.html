@@ -34,7 +34,7 @@
         }
 
         .login-form {
-            background: rgba(255, 255, 255, 0.3);
+            background: white;
             backdrop-filter: blur(10px);
             border: none;
             border-radius: 10px;
@@ -49,7 +49,7 @@
         }
 
         .login-form label {
-            color: #fff;
+            color: white;
             margin-right: 10px;
         }
 
@@ -64,10 +64,10 @@
             height: 50px;
             padding: 0px;
             margin: 10px 0;
-            border: none;
+            border: 1px solid gray;
             border-radius: 5px;
-            background: #fff;
-            color: #000;
+            background: white;
+            color: black;
             outline: none;
             font-size: 18px;
             text-align: center;
@@ -81,7 +81,7 @@
             border: none;
             border-radius: 5px;
             background: #007bff;
-            color: #fff;
+            color: white;
             cursor: pointer;
             font-size: 18px;
             text-align: center;
@@ -101,16 +101,16 @@
 <body>
     <form method="post">
         <div class="login-form">
-            <p id="Prompt" style="color: black; font-weight: bold; font-size: 24px;">{{ input_prompt }}</p>
+            <p id="Prompt" style="color: black; font-size: 20px;">{{ input_prompt }}</p>
             <input name="username" type="text" placeholder="{{ input_username_placeholder }}"><br>
             <input name="password" type="password" placeholder="{{ input_password_placeholder }}"><br>
             <input type="submit" value="{{ input_submit_value }}"><br>
-            <p id="errorPrompt" style="color: red;">{{ input_error_prompt }}</p>
+            <p id="errorPrompt" style="color: red; font-weight: bold;">{{ input_error_prompt }}</p>
         </div>
     </form>
     <br>
     <div class="links-info">
-        <p><a href="{{ url }}">{{ powered_by }}</a></p>
+        <p><a href="{{ url }}" style="font-weight: bold;">{{ powered_by }}</a></p>
     </div>
 </body>
 
