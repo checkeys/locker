@@ -9,7 +9,7 @@ from typing import Sequence
 from typing import Tuple
 from urllib.parse import parse_qs
 
-from xhtml.header.headers import Cookies
+from xhtml.header.cookie import Cookies
 from xhtml.header.headers import Headers
 from xhtml.locale.template import LocaleTemplate
 from xkits_command import ArgParser
@@ -51,13 +51,27 @@ class AuthRequestProxy(RequestProxy):
     def template(self) -> LocaleTemplate:
         return self.__template
 
-    def authenticate(self, path: str, method: str, data: bytes,
+    def authenticate(self, path: str,  # pylint:disable=too-many-locals
+                     method: str, data: bytes,
                      headers: MutableMapping[str, str]
                      ) -> Optional[ResponseProxy]:
         if path == "/favicon.ico":
             return None
+
         # if "localhost" in headers.get(Headers.HOST.value, ""):
         #     return None
+
+        authorization: str = headers.get(Headers.AUTHORIZATION.value, "")
+        if authorization:
+            from xhtml.header.authorization import \
+                Authorization  # pylint:disable=import-outside-toplevel
+
+            auth: Authorization.Auth = Authorization.paser(authorization)
+            if auth.type == Authorization.Basic.TYPE:
+                assert isinstance(auth, Authorization.Basic)
+                if self.authentication.verify(auth.username, auth.password):
+                    return None  # verified
+
         cookies: Cookies = Cookies(headers.get(Headers.COOKIE.value, ""))
         session_id: str = cookies.get("session_id")
         if not session_id:

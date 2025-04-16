@@ -39,6 +39,10 @@ class TestAuthRequestProxy(unittest.TestCase):
     def test_authenticate_favicon(self):
         self.assertIsNone(self.proxy.authenticate("/favicon.ico", "GET", b"", {}))  # noqa:E501
 
+    def test_authenticate_basic_authorization(self):
+        self.authentication.verify.side_effect = ["test"]
+        self.assertIsNone(self.proxy.authenticate("/", "GET", b"", {"Authorization": "Basic ZGVtbzp0ZXN0"}))  # noqa:E501
+
     def test_authenticate_session_id(self):
         self.assertIsInstance(self.proxy.authenticate("/", "GET", b"", {}), httpproxy.ResponseProxy)  # noqa:E501
 

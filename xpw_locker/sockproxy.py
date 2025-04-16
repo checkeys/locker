@@ -10,7 +10,7 @@ from typing import Sequence
 from typing import Tuple
 from urllib.parse import parse_qs
 
-from xhtml.header.headers import Cookies
+from xhtml.header.cookie import Cookies
 from xhtml.header.headers import Headers
 from xhtml.locale.template import LocaleTemplate
 from xkits_command import ArgParser
@@ -73,9 +73,21 @@ class AuthProxy():
         client.sendall(f"HTTP/1.1 200 OK\r\n{Headers.CONTENT_TYPE.value}: text/html\r\n{Headers.CONTENT_LENGTH.value}: {len(content)}\r\n\r\n".encode())  # noqa:E501
         client.sendall(content.encode())
 
-    def authenticate(self, client: socket, head: RequestHeader, data: bytes):
+    def authenticate(self, client: socket, head: RequestHeader, data: bytes):  # noqa:501 pylint:disable=too-many-locals
         if head.request_line.target == "/favicon.ico":
             return self.proxy.new_connection(client, data)
+
+        authorization: str = head.headers.get(Headers.AUTHORIZATION.value, "")
+        if authorization:
+            from xhtml.header.authorization import \
+                Authorization  # pylint:disable=import-outside-toplevel
+
+            auth: Authorization.Auth = Authorization.paser(authorization)
+            if auth.type == Authorization.Basic.TYPE:
+                assert isinstance(auth, Authorization.Basic)
+                if self.authentication.verify(auth.username, auth.password):
+                    return self.proxy.new_connection(client, data)  # verified
+
         cookies: Cookies = Cookies(head.headers.get(Headers.COOKIE.value, ""))
         session_id: str = cookies.get("session_id")
         if not session_id:
