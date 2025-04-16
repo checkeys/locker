@@ -25,6 +25,7 @@ from xserver.http.proxy import RequestProxy
 from xserver.http.proxy import ResponseProxy
 
 from xpw_locker.attribute import __description__
+from xpw_locker.attribute import __official_name__
 from xpw_locker.attribute import __urlhome__
 from xpw_locker.attribute import __version__
 
@@ -72,7 +73,9 @@ class AuthRequestProxy(RequestProxy):
             if password and self.authentication.verify(username, password):
                 self.sessions.sign_in(session_id)
                 return ResponseProxy.redirect(location=path)
-        context = self.template.search(headers.get("Accept-Language", "en"), "login").fill()  # noqa:E501
+        section = self.template.search(headers.get("Accept-Language", "en"), "login")  # noqa:E501
+        context = section.fill(name=__official_name__, version=__version__)
+        context.setdefault("url", __urlhome__)
         content = self.template.seek("login.html").render(**context)
         response = ResponseProxy.make_ok_response(content.encode())
         return response

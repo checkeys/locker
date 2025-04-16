@@ -29,6 +29,7 @@ from xserver.sock.header import RequestHeader
 from xserver.sock.proxy import SockProxy
 
 from xpw_locker.attribute import __description__
+from xpw_locker.attribute import __official_name__
 from xpw_locker.attribute import __urlhome__
 from xpw_locker.attribute import __version__
 
@@ -70,7 +71,9 @@ class AuthProxy():
 
     def send_login(self, client: socket, head: RequestHeader):
         accept_language: str = head.headers.get(Headers.ACCEPT_LANGUAGE.value, "en")  # noqa:E501
-        context = self.template.search(accept_language, "login").fill()
+        section = self.template.search(accept_language, "login")
+        context = section.fill(name=__official_name__, version=__version__)
+        context.setdefault("url", __urlhome__)
         content = self.template.seek("login.html").render(**context)
         client.sendall(f"HTTP/1.1 200 OK\r\n{Headers.CONTENT_TYPE.value}: text/html\r\n{Headers.CONTENT_LENGTH.value}: {len(content)}\r\n\r\n".encode())  # noqa:E501
         client.sendall(content.encode())
