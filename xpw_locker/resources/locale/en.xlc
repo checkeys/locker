@@ -2,6 +2,7 @@ language = "en"
 
 [login]
 language = "en"
+title = "Login"
 input_username_placeholder = "Username"
 input_password_placeholder = "Password"
 input_submit_value = "Sign In"
