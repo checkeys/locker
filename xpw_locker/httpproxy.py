@@ -80,7 +80,7 @@ class AuthRequestProxy(RequestProxy):
                 return ResponseProxy.redirect(location=path)
             else:
                 input_error_prompt = section.get("input_verify_error")
-        context = section.fill(name=__official_name__, version=__version__)
+        context = section.fill(name=f"{__official_name__}(http)", version=__version__)  # noqa:E501
         context.setdefault("input_error_prompt", input_error_prompt)
         context.setdefault("url", __urlhome__)
         content = self.template.seek("login.html").render(**context)
