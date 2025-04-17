@@ -1,4 +1,4 @@
 xkits-command>=0.2
-xhtm>=0.9
+xhtm>=0.10
 xser>=0.4
 xpw>=0.6
