@@ -6,6 +6,7 @@ import unittest
 from unittest import mock
 
 from xpw.authorize import Argon2Auth
+from xpw.configure import BasicConfig
 
 from xpw_locker import httpproxy
 
@@ -30,8 +31,7 @@ class TestAuthRequestProxy(unittest.TestCase):
             target_url=self.target_url,
             authentication=self.authentication,
             session_keys=self.session_keys,
-            template=self.template,
-            api_token="test",
+            template=self.template
         )
 
     def tearDown(self):
@@ -41,7 +41,7 @@ class TestAuthRequestProxy(unittest.TestCase):
         self.assertIsNone(self.proxy.authenticate("/favicon.ico", "GET", b"", {}))  # noqa:E501
 
     def test_authenticate_basic_authorization(self):
-        self.authentication.verify.side_effect = ["test"]
+        self.authentication.verify.side_effect = ["test", "test"]
         self.assertIsNone(self.proxy.authenticate("/", "GET", b"", {"Authorization": "Basic OnRlc3Q="}))  # noqa:E501
         self.assertIsNone(self.proxy.authenticate("/", "GET", b"", {"Authorization": "Basic ZGVtbzp0ZXN0"}))  # noqa:E501
 
@@ -103,7 +103,8 @@ class TestCommand(unittest.TestCase):
     @mock.patch.object(httpproxy, "run")
     @mock.patch.object(httpproxy.AuthInit, "from_file")
     def test_main(self, mock_auth, _):
-        mock_auth.side_effect = [Argon2Auth({"users": {"test", "unit"}})]
+        config = BasicConfig("test", {"users": {"test", "unit"}})
+        mock_auth.side_effect = [Argon2Auth(config)]
         self.assertEqual(httpproxy.main([]), ECANCELED)
 
 

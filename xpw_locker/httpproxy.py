@@ -17,10 +17,10 @@ from xkits_command import Command
 from xkits_command import CommandArgument
 from xkits_command import CommandExecutor
 from xpw import AuthInit
-from xpw import BasicAuth
 from xpw import DEFAULT_CONFIG_FILE
 from xpw import Pass
 from xpw import SessionKeys
+from xpw import TokenAuth
 from xserver.http.proxy import HttpProxy
 from xserver.http.proxy import RequestProxy
 from xserver.http.proxy import ResponseProxy
@@ -34,22 +34,16 @@ from xpw_locker.attribute import __version__
 class AuthRequestProxy(RequestProxy):
 
     def __init__(self,  # pylint:disable=R0913,R0917
-                 target_url: str, authentication: BasicAuth,
-                 session_keys: SessionKeys, template: LocaleTemplate,
-                 api_token: Optional[str] = None):
-        self.__authentication: BasicAuth = authentication
-        self.__api_token: Optional[str] = api_token
+                 target_url: str, authentication: TokenAuth,
+                 session_keys: SessionKeys, template: LocaleTemplate):
+        self.__authentication: TokenAuth = authentication
         self.__sessions: SessionKeys = session_keys
         self.__template: LocaleTemplate = template
         super().__init__(target_url)
 
     @property
-    def authentication(self) -> BasicAuth:
+    def authentication(self) -> TokenAuth:
         return self.__authentication
-
-    @property
-    def api_token(self) -> Optional[str]:
-        return self.__api_token
 
     @property
     def sessions(self) -> SessionKeys:
@@ -75,10 +69,7 @@ class AuthRequestProxy(RequestProxy):
                 Authorization  # pylint:disable=import-outside-toplevel
 
             auth: Authorization.Auth = Authorization.paser(authorization)
-            if auth.username == "":
-                if auth.password == self.api_token:
-                    return None  # verified
-            elif self.authentication.verify(auth.username, auth.password):
+            if self.authentication.verify(auth.username, auth.password):
                 return None  # verified
 
         cookies: Cookies = Cookies(headers.get(Headers.COOKIE.value, ""))
@@ -118,21 +109,19 @@ class AuthRequestProxy(RequestProxy):
         return cls(target_url=kwargs["target_url"],
                    authentication=kwargs["authentication"],
                    session_keys=kwargs["session_keys"],
-                   template=kwargs["template"],
-                   api_token=kwargs.get("api_token"))
+                   template=kwargs["template"])
 
 
 def run(listen_address: Tuple[str, int], target_url: str,
-        auth: Optional[BasicAuth] = None, token: Optional[str] = None,
-        lifetime: int = 86400):
+        auth: Optional[TokenAuth] = None, lifetime: int = 86400):
     base: str = os.path.dirname(__file__)
-    authentication: BasicAuth = auth or AuthInit.from_file()
+    authentication: TokenAuth = auth or AuthInit.from_file()
     session_keys: SessionKeys = SessionKeys(lifetime=lifetime)
     template: LocaleTemplate = LocaleTemplate(os.path.join(base, "resources"))
     httpd = ThreadingHTTPServer(listen_address, lambda *args: HttpProxy(
         *args, create_request_proxy=AuthRequestProxy.create,
         target_url=target_url, authentication=authentication,
-        session_keys=session_keys, template=template, api_token=token))
+        session_keys=session_keys, template=template))
     httpd.serve_forever()
 
 
@@ -162,13 +151,14 @@ def add_cmd(_arg: ArgParser):
 def run_cmd(cmds: Command) -> int:
     target_url: str = cmds.args.target_url
     lifetime: int = cmds.args.lifetime * 3600
-    auth: BasicAuth = AuthInit.from_file(cmds.args.config_file)
+    auth: TokenAuth = AuthInit.from_file(cmds.args.config_file)
     listen_address: Tuple[str, int] = (cmds.args.listen_address, cmds.args.listen_port)  # noqa:E501
     api_token: str = cmds.args.api_token or Pass.random_generate(32, Pass.CharacterSet.BASIC).value  # noqa:E501
     cmds.logger.info(f"API key: {api_token}")
+    auth.update_token(api_token)
     run(listen_address=listen_address,
         target_url=target_url,
-        auth=auth, token=api_token,
+        auth=auth,
         lifetime=lifetime)
     return ECANCELED
 

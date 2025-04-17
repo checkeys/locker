@@ -5,6 +5,7 @@ import unittest
 from unittest import mock
 
 from xpw.authorize import Argon2Auth
+from xpw.configure import BasicConfig
 
 from xpw_locker import sockproxy
 
@@ -21,7 +22,8 @@ class TestAuthProxy(unittest.TestCase):
         pass
 
     def setUp(self):
-        self.proxy = sockproxy.AuthProxy(self.target_host, self.target_port, token="test")  # noqa:E501
+        self.proxy = sockproxy.AuthProxy(self.target_host, self.target_port)
+        self.proxy.authentication.update_token("test")
 
     def tearDown(self):
         pass
@@ -237,7 +239,8 @@ class TestCommand(unittest.TestCase):
     @mock.patch.object(sockproxy, "run")
     @mock.patch.object(sockproxy.AuthInit, "from_file")
     def test_main(self, mock_auth, _):
-        mock_auth.side_effect = [Argon2Auth({"users": {"test", "unit"}})]
+        config = BasicConfig("test", {"users": {"test", "unit"}})
+        mock_auth.side_effect = [Argon2Auth(config)]
         self.assertEqual(sockproxy.main([]), ECANCELED)
 
 
