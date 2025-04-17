@@ -42,6 +42,7 @@ class TestAuthRequestProxy(unittest.TestCase):
 
     def test_authenticate_basic_authorization(self):
         self.authentication.verify.side_effect = ["test"]
+        self.assertIsNone(self.proxy.authenticate("/", "GET", b"", {"Authorization": "Basic OnRlc3Q="}))  # noqa:E501
         self.assertIsNone(self.proxy.authenticate("/", "GET", b"", {"Authorization": "Basic ZGVtbzp0ZXN0"}))  # noqa:E501
 
     def test_authenticate_bearer_authorization(self):

@@ -77,7 +77,10 @@ class AuthRequestProxy(RequestProxy):
             auth: Authorization.Auth = Authorization.paser(authorization)
             if auth.type == Authorization.Basic.TYPE:
                 assert isinstance(auth, Authorization.Basic)
-                if self.authentication.verify(auth.username, auth.password):
+                if auth.username == "":
+                    if auth.password == self.api_token:
+                        return None  # verified
+                elif self.authentication.verify(auth.username, auth.password):
                     return None  # verified
             elif auth.type == Authorization.Bearer.TYPE:
                 assert isinstance(auth, Authorization.Bearer)

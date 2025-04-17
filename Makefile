@@ -42,7 +42,7 @@ pylint:
 	pylint $(shell git ls-files xpw_locker/*.py)
 flake8:
 	flake8 xpw_locker --count --select=E9,F63,F7,F82 --show-source --statistics
-	flake8 xpw_locker --count --exit-zero --max-complexity=15 --max-line-length=127 --statistics
+	flake8 xpw_locker --count --exit-zero --max-complexity=20 --max-line-length=127 --statistics
 pytest:
 	pytest --cov=xpw_locker --cov-report=term-missing --cov-report=xml --cov-report=html --cov-config=.coveragerc --cov-fail-under=100
 pytest-clean:
