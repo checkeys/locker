@@ -71,8 +71,9 @@ class AuthProxy():
         client.sendall(b"\r\n")
 
     def send_html(self, client: socket, content: str):
-        client.sendall(f"HTTP/1.1 200 OK\r\n{Headers.CONTENT_TYPE.value}: text/html\r\n{Headers.CONTENT_LENGTH.value}: {len(content)}\r\n\r\n".encode())  # noqa:E501
-        client.sendall(content.encode())
+        datas: bytes = content.encode()
+        client.sendall(f"HTTP/1.1 200 OK\r\n{Headers.CONTENT_TYPE.value}: text/html\r\n{Headers.CONTENT_LENGTH.value}: {len(datas)}\r\n\r\n".encode())  # noqa:E501
+        client.sendall(datas)
 
     def authenticate(self, client: socket, head: RequestHeader, data: bytes):  # noqa:501 pylint:disable=R0911,R0912,R0914
         if head.request_line.target == "/favicon.ico":
