@@ -16,6 +16,8 @@ from xkits_command import ArgParser
 from xkits_command import Command
 from xkits_command import CommandArgument
 from xkits_command import CommandExecutor
+from xkits_logger import Color
+from xkits_logger import Logger
 from xpw import AuthInit
 from xpw import DEFAULT_CONFIG_FILE
 from xpw import Pass
@@ -120,6 +122,7 @@ def run(listen_address: Tuple[str, int], target_url: str,
         *args, create_request_proxy=AuthRequestProxy.create,
         target_url=target_url, authentication=authentication,
         session_keys=session_keys, template=template))
+    Logger.stderr(Color.green(f"Server listening on {listen_address}"))
     httpd.serve_forever()
 
 
