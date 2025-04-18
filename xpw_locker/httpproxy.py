@@ -74,16 +74,12 @@ class AuthRequestProxy(RequestProxy):
 
         cookies: Cookies = Cookies(headers.get(Headers.COOKIE.value, ""))
         session_id: str = cookies.get("session_id")
-        if not session_id:
-            response = ResponseProxy.redirect(location=path)
-            response.set_cookie("session_id", self.sessions.search().name)
-            return response
-        if self.sessions.verify(session_id):
+        if session_id and self.sessions.verify(session_id):
             return None  # logged
 
         input_error_prompt: str = ""
         section = self.template.search(headers.get("Accept-Language", "en"), "login")  # noqa:E501
-        if method == "POST":
+        if session_id and method == "POST":
             form_data = parse_qs(data.decode("utf-8"))
             username = form_data.get("username", [""])[0]
             password = form_data.get("password", [""])[0]
@@ -99,6 +95,8 @@ class AuthRequestProxy(RequestProxy):
         context.setdefault("url", __urlhome__)
         content = self.template.seek("login.html").render(**context)
         response = ResponseProxy.make_ok_response(content.encode())
+        if not session_id:
+            response.set_cookie("session_id", self.sessions.search().name)
         return response
 
     def request(self, *args, **kwargs) -> ResponseProxy:

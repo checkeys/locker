@@ -63,16 +63,20 @@ class AuthProxy():
     def proxy(self) -> SockProxy:
         return self.__proxy
 
-    def send_redirect(self, client: socket, location: str, session_id: Optional[str] = None):  # noqa:E501
+    def send_redirect(self, client: socket, location: str):  # noqa:E501
         client.sendall(b"HTTP/1.1 302 Found\r\n")
         client.sendall(f"{Headers.LOCATION.value}: {location}\r\n".encode())
-        if session_id:
-            client.sendall(f"{Headers.SET_COOKIE.value}: session_id={session_id}\r\n".encode())  # noqa:E501
         client.sendall(b"\r\n")
 
-    def send_html(self, client: socket, content: str):
+    def send_html(self, client: socket, content: str, session_id: Optional[str] = None):  # noqa:E501
         datas: bytes = content.encode()
-        client.sendall(f"HTTP/1.1 200 OK\r\n{Headers.CONTENT_TYPE.value}: text/html\r\n{Headers.CONTENT_LENGTH.value}: {len(datas)}\r\n\r\n".encode())  # noqa:E501
+        client.sendall(b"HTTP/1.1 200 OK\r\n")
+        client.sendall(f"{Headers.CONTENT_TYPE.value}: text/html\r\n".encode())
+        client.sendall(f"{Headers.CONTENT_LENGTH.value}: {len(datas)}\r\n".encode())  # noqa:E501
+        if not session_id:
+            session_id = self.sessions.search().name
+            client.sendall(f"{Headers.SET_COOKIE.value}: session_id={session_id}\r\n".encode())  # noqa:E501
+        client.sendall(b"\r\n")
         client.sendall(datas)
 
     def authenticate(self, client: socket, head: RequestHeader, data: bytes):  # noqa:501 pylint:disable=R0911,R0912,R0914
@@ -90,15 +94,13 @@ class AuthProxy():
 
         cookies: Cookies = Cookies(head.headers.get(Headers.COOKIE.value, ""))
         session_id: str = cookies.get("session_id")
-        if not session_id:
-            return self.send_redirect(client, head.request_line.target, self.sessions.search().name)  # noqa:E501
-        if self.sessions.verify(session_id):
+        if session_id and self.sessions.verify(session_id):
             return self.proxy.new_connection(client, data)
 
         input_error_prompt: str = ""
         accept_language: str = head.headers.get(Headers.ACCEPT_LANGUAGE.value, "en")  # noqa:E501
         section = self.template.search(accept_language, "login")
-        if head.request_line.method == "POST":
+        if session_id and head.request_line.method == "POST":
             data = data[head.length:]
             if (dlen := int(head.headers.get(Headers.CONTENT_LENGTH.value, "0")) - len(data)) > 0:  # noqa:E501
                 data += client.recv(dlen)
@@ -116,7 +118,7 @@ class AuthProxy():
         context.setdefault("input_error_prompt", input_error_prompt)
         context.setdefault("url", __urlhome__)
         content = self.template.seek("login.html").render(**context)
-        return self.send_html(client, content)
+        return self.send_html(client, content, session_id)
 
     def request(self, client: socket, address: Tuple[str, int]):
         Logger.stderr(Color.yellow(f"Connection {address} connecting"))
