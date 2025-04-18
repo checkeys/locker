@@ -3,6 +3,8 @@
 from errno import ECANCELED
 from http.server import ThreadingHTTPServer
 import os
+from typing import Dict
+from typing import List
 from typing import MutableMapping
 from typing import Optional
 from typing import Sequence
@@ -82,9 +84,9 @@ class AuthRequestProxy(RequestProxy):
         input_error_prompt: str = ""
         section = self.template.search(headers.get("Accept-Language", "en"), "login")  # noqa:E501
         if session_id and method == "POST":
-            form_data = parse_qs(data.decode("utf-8"))
-            username = form_data.get("username", [""])[0]
-            password = form_data.get("password", [""])[0]
+            form_data: Dict[str, List[str]] = parse_qs(data.decode("utf-8"))
+            username: str = form_data.get("username", [""])[0]
+            password: str = form_data.get("password", [""])[0]
             if not password:
                 input_error_prompt = section.get("input_password_is_null")
             elif self.authentication.verify(username, password):

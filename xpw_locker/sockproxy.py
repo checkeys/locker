@@ -5,6 +5,8 @@ import os
 from socket import AF_INET
 from socket import SOCK_STREAM
 from socket import socket
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Sequence
 from typing import Tuple
@@ -104,9 +106,9 @@ class AuthProxy():
             data = data[head.length:]
             if (dlen := int(head.headers.get(Headers.CONTENT_LENGTH.value, "0")) - len(data)) > 0:  # noqa:E501
                 data += client.recv(dlen)
-            form_data = parse_qs(data.decode("utf-8"))
-            username = form_data.get("username", [""])[0]
-            password = form_data.get("password", [""])[0]
+            form_data: Dict[str, List[str]] = parse_qs(data.decode("utf-8"))
+            username: str = form_data.get("username", [""])[0]
+            password: str = form_data.get("password", [""])[0]
             if not password:
                 input_error_prompt = section.get("input_password_is_null")
             elif self.authentication.verify(username, password):
