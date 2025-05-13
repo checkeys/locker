@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
-    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
     <style>
         body {
             margin: 0;
@@ -99,14 +99,12 @@
 </head>
 
 <body>
-    <form method="post">
-        <div class="login-form">
-            <p id="Prompt" style="color: black; font-size: 20px;">{{ input_prompt }}</p>
-            <input name="username" type="text" placeholder="{{ input_username_placeholder }}"><br>
-            <input name="password" type="password" placeholder="{{ input_password_placeholder }}"><br>
-            <input type="submit" value="{{ input_submit_value }}"><br>
-            <p id="errorPrompt" style="color: red; font-weight: bold;">{{ input_error_prompt }}</p>
-        </div>
+    <form class="login-form" method="post">
+        <p id="Prompt" style="color: black; font-size: 20px;">{{ input_prompt }}</p>
+        <input name="username" type="text" placeholder="{{ input_username_placeholder }}" required><br>
+        <input name="password" type="password" placeholder="{{ input_password_placeholder }}" required><br>
+        <input type="submit" value="{{ input_submit_value }}"><br>
+        <p id="errorPrompt" style="color: red; font-weight: bold;">{{ input_error_prompt }}</p>
     </form>
     <br>
     <div class="links-info">
