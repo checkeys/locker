@@ -39,5 +39,5 @@ setup(
     packages=find_packages(include=["xpw_locker*"], exclude=["xpw_locker.unittest"]),  # noqa:E501
     package_data={"xpw_locker.resources": ["*.html", "*.ico"],
                   "xpw_locker.resources.images": ["*.svg"],
-                  "xpw_locker.resources.locale": ["*.xlc"]},
+                  "xpw_locker.resources.translate": ["*.xlc"]},
     install_requires=all_requirements())

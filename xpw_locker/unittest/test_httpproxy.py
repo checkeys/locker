@@ -5,8 +5,8 @@ import os
 import unittest
 from unittest import mock
 
-from xpw.authorize import Argon2Auth
-from xpw.configure import BasicConfig
+from xpw import Argon2Auth
+from xpw import BasicConfig
 
 from xpw_locker import httpproxy
 
@@ -23,15 +23,16 @@ class TestAuthRequestProxy(unittest.TestCase):
     def tearDownClass(cls):
         pass
 
+    @mock.patch.object(BasicConfig, "dumpf", mock.MagicMock())
     def setUp(self):
-        self.authentication = mock.MagicMock()
-        self.session_keys = httpproxy.SessionKeys()
+        self.config = BasicConfig("auth", {"users": {"demo": "test"}})
+        self.auth = Argon2Auth(self.config)
+        self.account = httpproxy.Account(self.auth)
         self.template = httpproxy.LocaleTemplate(self.resources)
         self.proxy = httpproxy.AuthRequestProxy.create(
+            template=self.template,
             target_url=self.target_url,
-            authentication=self.authentication,
-            session_keys=self.session_keys,
-            template=self.template
+            account=self.account
         )
 
     def tearDown(self):
@@ -41,32 +42,32 @@ class TestAuthRequestProxy(unittest.TestCase):
         self.assertIsNone(self.proxy.authenticate("/favicon.ico", "GET", b"", {}))  # noqa:E501
 
     def test_authenticate_basic_authorization(self):
-        self.authentication.verify.side_effect = ["test", "test"]
-        self.assertIsNone(self.proxy.authenticate("/", "GET", b"", {"Authorization": "Basic OnRlc3Q="}))  # noqa:E501
+        self.proxy.account.members.create_api_token(token="test")
         self.assertIsNone(self.proxy.authenticate("/", "GET", b"", {"Authorization": "Basic ZGVtbzp0ZXN0"}))  # noqa:E501
+        self.assertIsNone(self.proxy.authenticate("/", "GET", b"", {"Authorization": "Basic OnRlc3Q="}))  # noqa:E501
 
     def test_authenticate_bearer_authorization(self):
+        self.account.members.create_api_token(token="test")
         self.assertIsNone(self.proxy.authenticate("/", "GET", b"", {"Authorization": "Bearer test"}))  # noqa:E501
 
     def test_authenticate_apikey_authorization(self):
+        self.account.members.create_api_token(token="test")
         self.assertIsNone(self.proxy.authenticate("/", "GET", b"", {"Authorization": "ApiKey test"}))  # noqa:E501
 
     def test_authenticate_session_id(self):
         self.assertIsInstance(self.proxy.authenticate("/", "GET", b"", {}), httpproxy.ResponseProxy)  # noqa:E501
 
     def test_authenticate_verify(self):
-        self.session_keys.sign_in("test")
+        self.account.tickets.sign_in(session_id="test", identity="demo")
         self.assertIsNone(self.proxy.authenticate("/", "GET", b"", {"Cookie": "session_id=test"}))  # noqa:E501
 
     def test_authenticate_post_login_password_null(self):
         self.assertIsInstance(self.proxy.authenticate("/", "POST", b"username=demo&password=", {"Cookie": "session_id=test"}), httpproxy.ResponseProxy)  # noqa:E501
 
     def test_authenticate_post_login_password_error(self):
-        self.authentication.verify.side_effect = [None]
-        self.assertIsInstance(self.proxy.authenticate("/", "POST", b"username=demo&password=test", {"Cookie": "session_id=test"}), httpproxy.ResponseProxy)  # noqa:E501
+        self.assertIsInstance(self.proxy.authenticate("/", "POST", b"username=demo&password=unit", {"Cookie": "session_id=test"}), httpproxy.ResponseProxy)  # noqa:E501
 
     def test_authenticate_post_login(self):
-        self.authentication.verify.side_effect = ["test"]
         self.assertIsInstance(self.proxy.authenticate("/", "POST", b"username=demo&password=test", {"Cookie": "session_id=test"}), httpproxy.ResponseProxy)  # noqa:E501
 
     def test_authenticate_get_login(self):
@@ -90,21 +91,23 @@ class TestCommand(unittest.TestCase):
     def tearDownClass(cls):
         pass
 
+    @mock.patch.object(BasicConfig, "dumpf", mock.MagicMock())
     def setUp(self):
-        pass
+        self.config = BasicConfig("auth", {"users": {"demo": "test"}})
+        self.auth = Argon2Auth(self.config)
+        self.account = httpproxy.Account(self.auth)
 
     def tearDown(self):
         pass
 
     @mock.patch.object(httpproxy, "ThreadingHTTPServer", mock.MagicMock())
     def test_run(self):
-        self.assertIsNone(httpproxy.run(self.listen_address, self.target_url))
+        with mock.patch.object(httpproxy.Account, "from_file", mock.MagicMock(side_effect=[self.account])):  # noqa:E501
+            self.assertIsNone(httpproxy.run(self.listen_address, self.target_url))  # noqa:E501
 
-    @mock.patch.object(httpproxy, "run")
-    @mock.patch.object(httpproxy.AuthInit, "from_file")
-    def test_main(self, mock_auth, _):
-        config = BasicConfig("test", {"users": {"test", "unit"}})
-        mock_auth.side_effect = [Argon2Auth(config)]
+    @mock.patch.object(httpproxy.Account, "from_file", mock.MagicMock())
+    @mock.patch.object(httpproxy, "run", mock.MagicMock())
+    def test_main(self):
         self.assertEqual(httpproxy.main([]), ECANCELED)
 
 

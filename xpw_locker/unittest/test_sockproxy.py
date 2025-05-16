@@ -4,8 +4,8 @@ from errno import ECANCELED
 import unittest
 from unittest import mock
 
-from xpw.authorize import Argon2Auth
-from xpw.configure import BasicConfig
+from xpw import Argon2Auth
+from xpw import BasicConfig
 
 from xpw_locker import sockproxy
 
@@ -21,9 +21,13 @@ class TestAuthProxy(unittest.TestCase):
     def tearDownClass(cls):
         pass
 
+    @mock.patch.object(BasicConfig, "dumpf", mock.MagicMock())
     def setUp(self):
-        self.proxy = sockproxy.AuthProxy(self.target_host, self.target_port)
-        self.proxy.authentication.update_token("test")
+        self.config = BasicConfig("auth", {"users": {"demo": "test"}})
+        self.auth = Argon2Auth(self.config)
+        self.account = sockproxy.Account(self.auth)
+        self.proxy = sockproxy.AuthProxy(self.target_host, self.target_port, account=self.account)  # noqa:E501
+        self.proxy.account.members.create_api_token(token="test")
 
     def tearDown(self):
         pass
@@ -68,8 +72,8 @@ class TestAuthProxy(unittest.TestCase):
             head = sockproxy.RequestHeader.parse(b"GET / HTTP/1.1\r\nAuthorization: Basic ZGVtbzp0ZXN0\r\n\r\n")  # noqa:E501
             self.assertIsInstance(head, sockproxy.RequestHeader)
             assert isinstance(head, sockproxy.RequestHeader)
-            with mock.patch.object(self.proxy.authentication, "verify") as mock_verify:  # noqa:E501
-                mock_verify.side_effect = [True]
+            with mock.patch.object(self.proxy.account.members, "verify") as mock_verify:  # noqa:E501
+                mock_verify.side_effect = ["demo"]
                 self.assertIs(self.proxy.authenticate(client=client, head=head, data=b"test"), fake_new_connection)  # noqa:E501
 
     @mock.patch.object(sockproxy, "socket")
@@ -123,7 +127,7 @@ class TestAuthProxy(unittest.TestCase):
             head = sockproxy.RequestHeader.parse(b"GET / HTTP/1.1\r\nCookie: session_id=123456\r\n\r\n")  # noqa:E501
             self.assertIsInstance(head, sockproxy.RequestHeader)
             assert isinstance(head, sockproxy.RequestHeader)
-            with mock.patch.object(self.proxy.sessions, "verify") as mock_verify:  # noqa:E501
+            with mock.patch.object(self.proxy.account.tickets, "verify") as mock_verify:  # noqa:E501
                 mock_verify.side_effect = [True]
                 self.assertIs(self.proxy.authenticate(client=client, head=head, data=b"test"), fake_new_connection)  # noqa:E501
 
@@ -138,11 +142,24 @@ class TestAuthProxy(unittest.TestCase):
         head = sockproxy.RequestHeader.parse(data)  # noqa:E501
         self.assertIsInstance(head, sockproxy.RequestHeader)
         assert isinstance(head, sockproxy.RequestHeader)
-        with mock.patch.object(self.proxy.sessions, "verify") as mock_verify1:
-            mock_verify1.side_effect = [False]
-            with mock.patch.object(self.proxy.authentication, "verify") as mock_verify2:  # noqa:E501
-                mock_verify2.side_effect = [True]
-                self.assertIsNone(self.proxy.authenticate(client=client, head=head, data=data))  # noqa:E501
+        with mock.patch.object(self.proxy.account.tickets, "verify") as mock_verify:  # noqa:E501
+            mock_verify.side_effect = [False]
+            self.assertIsNone(self.proxy.authenticate(client=client, head=head, data=data))  # noqa:E501
+
+    @mock.patch.object(sockproxy, "socket")
+    def test_authenticate_post_login_password_error(self, mock_socket):
+        fake_socket = mock.MagicMock()
+        fake_socket.recv.side_effect = [b"username=demo&password=unit"]
+        mock_socket.side_effect = [fake_socket]
+        client = sockproxy.socket()
+        self.assertIs(client, fake_socket)
+        data = b"POST / HTTP/1.1\r\nContent-Length: 23\r\nCookie: session_id=123456\r\n\r\n"  # noqa:E501
+        head = sockproxy.RequestHeader.parse(data)  # noqa:E501
+        self.assertIsInstance(head, sockproxy.RequestHeader)
+        assert isinstance(head, sockproxy.RequestHeader)
+        with mock.patch.object(self.proxy.account.tickets, "verify") as mock_verify:  # noqa:E501
+            mock_verify.side_effect = [False]
+            self.assertIsNone(self.proxy.authenticate(client=client, head=head, data=data))  # noqa:E501
 
     @mock.patch.object(sockproxy, "socket")
     def test_authenticate_post_login(self, mock_socket):
@@ -155,11 +172,9 @@ class TestAuthProxy(unittest.TestCase):
         head = sockproxy.RequestHeader.parse(data)  # noqa:E501
         self.assertIsInstance(head, sockproxy.RequestHeader)
         assert isinstance(head, sockproxy.RequestHeader)
-        with mock.patch.object(self.proxy.sessions, "verify") as mock_verify1:
-            mock_verify1.side_effect = [False]
-            with mock.patch.object(self.proxy.authentication, "verify") as mock_verify2:  # noqa:E501
-                mock_verify2.side_effect = [True]
-                self.assertIsNone(self.proxy.authenticate(client=client, head=head, data=data))  # noqa:E501
+        with mock.patch.object(self.proxy.account.tickets, "verify") as mock_verify:  # noqa:E501
+            mock_verify.side_effect = [False]
+            self.assertIsNone(self.proxy.authenticate(client=client, head=head, data=data))  # noqa:E501
 
     @mock.patch.object(sockproxy, "socket")
     def test_authenticate_get_login(self, mock_socket):
@@ -170,7 +185,7 @@ class TestAuthProxy(unittest.TestCase):
         head = sockproxy.RequestHeader.parse(b"GET / HTTP/1.1\r\nCookie: session_id=123456\r\n\r\n")  # noqa:E501
         self.assertIsInstance(head, sockproxy.RequestHeader)
         assert isinstance(head, sockproxy.RequestHeader)
-        with mock.patch.object(self.proxy.sessions, "verify") as mock_verify:
+        with mock.patch.object(self.proxy.account.tickets, "verify") as mock_verify:  # noqa:E501
             mock_verify.side_effect = [False]
             self.assertIsNone(self.proxy.authenticate(client=client, head=head, data=b"test"))  # noqa:E501
 
@@ -219,8 +234,11 @@ class TestCommand(unittest.TestCase):
     def tearDownClass(cls):
         pass
 
+    @mock.patch.object(BasicConfig, "dumpf", mock.MagicMock())
     def setUp(self):
-        pass
+        self.config = BasicConfig("auth", {"users": {"demo": "test"}})
+        self.auth = Argon2Auth(self.config)
+        self.account = sockproxy.Account(self.auth)
 
     def tearDown(self):
         pass
@@ -234,13 +252,12 @@ class TestCommand(unittest.TestCase):
             self.assertRaises(StopIteration, sockproxy.run,
                               listen_address=self.listen_address,
                               target_host=self.target_host,
-                              target_port=self.target_port)
+                              target_port=self.target_port,
+                              account=self.account)
 
-    @mock.patch.object(sockproxy, "run")
-    @mock.patch.object(sockproxy.AuthInit, "from_file")
-    def test_main(self, mock_auth, _):
-        config = BasicConfig("test", {"users": {"test", "unit"}})
-        mock_auth.side_effect = [Argon2Auth(config)]
+    @mock.patch.object(sockproxy.Account, "from_file", mock.MagicMock())
+    @mock.patch.object(sockproxy, "run", mock.MagicMock())
+    def test_main(self):
         self.assertEqual(sockproxy.main([]), ECANCELED)
 
 
