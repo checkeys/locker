@@ -6,8 +6,6 @@ LABEL version=$VERSION
 
 WORKDIR /app
 
-COPY ./xpwauth .
-
 RUN pip install --no-cache-dir xpw-locker==$VERSION
 
 EXPOSE 3000
