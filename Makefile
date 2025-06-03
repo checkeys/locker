@@ -1,6 +1,6 @@
 MAKEFLAGS += --always-make
 
-VERSION := $(shell python3 -c "from xpw_locker.attribute import __version__; print(__version__)")
+VERSION := $(shell python3 setup.py --version)
 
 all: build reinstall test
 

@@ -23,8 +23,20 @@ jobs:
         run: |
           xpip-upload --token ${{ secrets.PYPI_TOKEN }} dist/*
 
+  pypi-index:
+    needs: pypi
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install from PyPI
+        run: |
+          python -m pip install -r requirements.txt
+          PKGNAME=$(python setup.py --name)
+          VERSION=$(python setup.py --version)
+          while true; do python -m pip install $PKGNAME==$VERSION && break || sleep 5; done
+
   docker-locker-http:
-    needs: PyPI
+    needs: pypi-index
     runs-on: ubuntu-latest
     steps:
       - name: Extract version from tag
@@ -78,7 +90,7 @@ jobs:
         run: echo ${{ steps.docker_build.outputs.digest }}
 
   docker-locker-sock:
-    needs: PyPI
+    needs: pypi-index
     runs-on: ubuntu-latest
     steps:
       - name: Extract version from tag
