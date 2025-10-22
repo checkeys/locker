@@ -12,6 +12,7 @@ from typing import Tuple
 from urllib.parse import parse_qs
 
 from xhtml.header.cookie import Cookies
+from xhtml.header.headers import HeaderMapping
 from xhtml.header.headers import Headers
 from xhtml.locale.template import LocaleTemplate
 from xkits_command import ArgParser
@@ -55,13 +56,15 @@ class AuthRequestProxy(RequestProxy):
         if path == "/favicon.ico":
             return None
 
-        # if "localhost" in headers.get(Headers.HOST.value, ""):
+        _headers = HeaderMapping(headers.items())
+
+        # if "localhost" in _headers.get(Headers.HOST.value, ""):
         #     return None
 
-        cookies: Cookies = Cookies(headers.get(Headers.COOKIE.value, ""))
+        cookies: Cookies = Cookies(_headers.get(Headers.COOKIE.value, ""))
         session_id: str = cookies.get("session_id")
 
-        authorization: str = headers.get(Headers.AUTHORIZATION.value, "")
+        authorization: str = _headers.get(Headers.AUTHORIZATION.value, "")
         if authorization:
             from xhtml.header.authorization import \
                 Authorization  # pylint:disable=import-outside-toplevel
@@ -74,7 +77,7 @@ class AuthRequestProxy(RequestProxy):
             return None  # logged
 
         input_error_prompt: str = ""
-        section = self.template.search(headers.get("Accept-Language", "en"), "login")  # noqa:E501
+        section = self.template.search(_headers.get(Headers.ACCEPT_LANGUAGE.value, "en"), "login")  # noqa:E501
         if session_id and method == "POST":
             form_data: Dict[str, List[str]] = parse_qs(data.decode("utf-8"))
             username: str = form_data.get("username", [""])[0]
