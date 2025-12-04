@@ -1,9 +1,12 @@
 # coding=utf-8
 
+from os.path import dirname
+from os.path import join
 from urllib.parse import urljoin
 
 from setuptools import find_packages
 from setuptools import setup
+from setuptools.command.install import install
 
 from xpw_locker.attribute import __author__
 from xpw_locker.attribute import __author_email__
@@ -22,8 +25,17 @@ def all_requirements():
         with open(path, "r", encoding="utf-8") as rhdl:
             return rhdl.read().splitlines()
 
-    requirements = read_requirements("requirements.txt")
+    path: str = join(dirname(__file__), "requirements.txt")
+    requirements = read_requirements(path)
     return requirements
+
+
+class CustomInstallCommand(install):
+    """Customized setuptools install command"""
+
+    def run(self):
+        install.run(self)  # Run the standard installation
+        # Execute your custom code after installation
 
 
 setup(
@@ -40,4 +52,8 @@ setup(
     package_data={"xpw_locker.resources": ["*.html", "*.ico"],
                   "xpw_locker.resources.images": ["*.svg"],
                   "xpw_locker.resources.translate": ["*.xlc"]},
-    install_requires=all_requirements())
+    install_requires=all_requirements(),
+    cmdclass={
+        "install": CustomInstallCommand,
+    }
+)
