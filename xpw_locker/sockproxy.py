@@ -19,7 +19,7 @@ from xkits_command import ArgParser
 from xkits_command import Command
 from xkits_command import CommandArgument
 from xkits_command import CommandExecutor
-from xkits_lib import TimeUnit
+from xkits_lib.unit import TimeUnit
 from xkits_logger import Color
 from xkits_logger import Logger
 from xkits_thread import ThreadPool

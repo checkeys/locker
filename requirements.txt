@@ -1,4 +1,6 @@
-xkits-command>=0.5
-xhtm>=0.12
-xser>=0.5
+xkits-command>=0.5.3
+xkits-thread>=0.2
+xkits-lib>=0.4
+xhtm>=0.12.1
+xser>=0.5.1
 xpw>=0.14
