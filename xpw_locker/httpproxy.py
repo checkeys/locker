@@ -3,6 +3,7 @@
 from errno import ECANCELED
 from http.server import ThreadingHTTPServer
 import os
+from pathlib import Path
 from typing import Dict
 from typing import List
 from typing import MutableMapping
@@ -110,8 +111,7 @@ def run(listen_address: Tuple[str, int], target_url: str,
         account: Optional[Account] = None):
     if account is None:
         account = Account.from_file()
-    base: str = os.path.dirname(__file__)
-    template: LocaleTemplate = LocaleTemplate(os.path.join(base, "resources"))
+    template: LocaleTemplate = LocaleTemplate(Path(__file__).parent / "resources")  # noqa:E501
     httpd = ThreadingHTTPServer(listen_address, lambda *args: HttpProxy(
         *args, create_request_proxy=AuthRequestProxy.create,
         template=template, target_url=target_url, account=account))

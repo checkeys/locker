@@ -1,7 +1,7 @@
 # coding:utf-8
 
 from errno import ECANCELED
-import os
+from pathlib import Path
 import unittest
 from unittest import mock
 
@@ -12,12 +12,12 @@ from xpw_locker import httpproxy
 
 
 class TestAuthRequestProxy(unittest.TestCase):
-    BASE: str = os.path.dirname(os.path.dirname(__file__))
+    BASE: Path = Path(__file__).parent.parent
 
     @classmethod
     def setUpClass(cls):
+        cls.resources = cls.BASE / "resources"
         cls.target_url = "https://example.com/"
-        cls.resources = os.path.join(cls.BASE, "resources")
 
     @classmethod
     def tearDownClass(cls):

@@ -2,6 +2,7 @@
 
 from errno import ECANCELED
 import os
+from pathlib import Path
 from socket import AF_INET
 from socket import SOCK_STREAM
 from socket import socket
@@ -35,12 +36,11 @@ from xpw_locker.attribute import __version__
 
 
 class AuthProxy():
-    BASE: str = os.path.dirname(__file__)
+    BASE: Path = Path(__file__).parent
 
     def __init__(self, host: str, port: int, timeout: TimeUnit = 300,
                  account: Optional[Account] = None):
-        resources: str = os.path.join(self.BASE, "resources")
-        self.__template: LocaleTemplate = LocaleTemplate(resources)
+        self.__template: LocaleTemplate = LocaleTemplate(self.BASE / "resources")  # noqa:E501
         self.__account: Account = account or Account.from_file()
         self.__proxy: SockProxy = SockProxy(host, port, timeout)
 
