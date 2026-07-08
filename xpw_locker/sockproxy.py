@@ -1,4 +1,5 @@
 # coding:utf-8
+# pylint:disable=duplicate-code
 
 from errno import ECANCELED
 import os
@@ -29,9 +30,9 @@ from xpw import DEFAULT_CONFIG_FILE
 from xserver.sock.header import RequestHeader
 from xserver.sock.proxy import SockProxy
 
-from xpw_locker.attribute import __description__
-from xpw_locker.attribute import __official_name__
-from xpw_locker.attribute import __urlhome__
+from xpw_locker.attribute import __project_desc__
+from xpw_locker.attribute import __project_home__
+from xpw_locker.attribute import __project_name__
 from xpw_locker.attribute import __version__
 
 
@@ -107,9 +108,9 @@ class AuthProxy():
                 return self.send_redirect(client, head.request_line.target)
             else:
                 input_error_prompt = section.get("input_verify_error")
-        context = section.fill(name=f"{__official_name__}(socket)", version=__version__)  # noqa:E501
+        context = section.fill(name=f"{__project_name__}(socket)", version=__version__)  # noqa:E501
         context.setdefault("input_error_prompt", input_error_prompt)
-        context.setdefault("url", __urlhome__)
+        context.setdefault("url", __project_home__)
         content = self.template.seek("login.html").render(**context)
         return self.send_html(client, content, session_id)
 
@@ -158,7 +159,7 @@ def run(listen_address: Tuple[str, int],  # pylint:disable=R0913,R0917
                 pool.submit(proxy.request, client, address)
 
 
-@CommandArgument("locker-sock", description=__description__)
+@CommandArgument("locker-sock", description=__project_desc__)
 def add_cmd(_arg: ArgParser):
     _arg.add_argument("--config", type=str, dest="config_file",
                       help="Authentication configuration", metavar="FILE",
@@ -211,7 +212,7 @@ def run_cmd(cmds: Command) -> int:
 def main(argv: Optional[Sequence[str]] = None) -> int:
     cmds = Command()
     cmds.version = __version__
-    return cmds.run(root=add_cmd, argv=argv, epilog=f"For more, please visit {__urlhome__}.")  # noqa:E501
+    return cmds.run(root=add_cmd, argv=argv, epilog=f"For more, please visit {__project_home__}.")  # noqa:E501
 
 
 if __name__ == "__main__":

@@ -1,12 +1,16 @@
 [run]
-omit =
-    xpw_locker/unittest/*
-    xpw_locker/attribute.py
+omit = 
+	xpw_locker/attribute.py
+	xpw_locker/unittest/*
+source = 
+	xpw_locker
 
 [report]
-exclude_lines =
-    pragma: no cover
-    raise NotImplementedError
-    if __name__ == .__main__.:
-    def __repr__
-    pass
+exclude_lines = 
+	pragma: no cover
+	raise NotImplementedError
+	if __name__ == .__main__.:
+	def __repr__
+	pass
+fail_under = 100
+

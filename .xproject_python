@@ -1,0 +1,44 @@
+name = "locker"
+home = "https://github.com/checkeys/locker/"
+description = "Access authentication"
+keywords = []
+version = "1.0.1"
+
+[authors.zoumingzhe]
+name = "Mingzhe Zou"
+email = "zoumingzhe@outlook.com"
+
+[packages.xpw-locker]
+requires_python = ">=3.8"
+authors = [
+    "zoumingzhe",
+]
+keywords = []
+requirements = [
+    "xkits-command>=0.7",
+    "xkits-thread>=0.3",
+    "xkits-lib>=0.5",
+    "xhtm>=0.13",
+    "xser>=0.6",
+    "xpw>=0.17",
+]
+build_backend = "hatchling"
+max_complexity = 10
+max_line_length = 127
+
+[packages.xpw-locker.modules.xpw_locker]
+base = "xpw_locker"
+exclude = [
+    "unittest",
+]
+omitted = [
+    "attribute.py",
+    "unittest/*",
+]
+
+[packages.xpw-locker.modules.xpw_locker.scripts]
+locker-http = "httpproxy:main"
+locker-sock = "sockproxy:main"
+
+[packages.xpw-locker.modules.xpw_locker.templates]
+"attribute.py" = true

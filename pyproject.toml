@@ -1,0 +1,61 @@
+[build-system]
+build-backend = "hatchling.build"
+requires = [
+    "hatch-requirements-txt",
+    "hatchling",
+]
+
+[project]
+authors = [
+    { name = "Mingzhe Zou", email = "zoumingzhe@outlook.com" },
+]
+classifiers = [
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+description = "Access authentication"
+dynamic = [
+    "dependencies",
+    "version",
+]
+keywords = []
+name = "xpw-locker"
+requires-python = ">=3.8"
+
+[project.license]
+file = "LICENSE"
+
+[project.readme]
+content-type = "text/markdown"
+file = "readme.md"
+
+[project.scripts]
+locker-http = "xpw_locker.httpproxy:main"
+locker-sock = "xpw_locker.sockproxy:main"
+
+[project.urls]
+Homepage = "https://github.com/checkeys/locker/"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "xpw_locker/unittest",
+]
+packages = [
+    "xpw_locker",
+]
+
+[tool.hatch.build.targets.wheel]
+exclude = [
+    "xpw_locker/unittest",
+]
+packages = [
+    "xpw_locker",
+]
+
+[tool.hatch.metadata.hooks.requirements_txt]
+files = [
+    "requirements.txt",
+]
+
+[tool.hatch.version]
+path = "xpw_locker/attribute.py"

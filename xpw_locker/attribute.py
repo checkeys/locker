@@ -1,11 +1,11 @@
 # coding:utf-8
 
-__project__ = "xpw-locker"
-__version__ = "1.0.1"
-__urlhome__ = "https://github.com/checkeys/locker/"
-__description__ = "Access authentication"
-__official_name__ = "Locker"
+# project info
+__project_name__ = "locker"
+__project_home__ = "https://github.com/checkeys/locker/"
+__project_desc__ = "Access authentication"
 
-# author
-__author__ = "Mingzhe Zou"
-__author_email__ = "zoumingzhe@outlook.com"
+# package info
+__version__ = "1.0.1"
+__package_name__ = "xpw-locker"
+__package_desc__ = "Access authentication"
