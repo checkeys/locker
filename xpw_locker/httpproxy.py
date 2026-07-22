@@ -87,7 +87,7 @@ class AuthRequestProxy(RequestProxy):
             if not password:
                 input_error_prompt = section.get("input_password_is_null")
             elif self.account.login(username, password, session_id):
-                return ResponseProxy.redirect(location=path)
+                return ResponseProxy.redirect(status_code=303, location=path)
             else:
                 input_error_prompt = section.get("input_verify_error")
         context = section.fill(name=f"{__project_name__}(http)", version=__version__)  # noqa:E501

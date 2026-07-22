@@ -58,8 +58,11 @@ class AuthProxy():
         return self.__proxy
 
     def send_redirect(self, client: socket, location: str):  # noqa:E501
-        client.sendall(b"HTTP/1.1 302 Found\r\n")
+        client.sendall(b"HTTP/1.1 303 See Other\r\n")
         client.sendall(f"{Headers.LOCATION.value}: {location}\r\n".encode())
+        # client.sendall(b"Cache-Control: no-cache, no-store, must-revalidate\r\n")  # noqa:E501
+        # client.sendall(b"Pragma: no-cache\r\n")
+        # client.sendall(b"Expires: 0\r\n")
         client.sendall(b"\r\n")
 
     def send_html(self, client: socket, content: str, session_id: Optional[str] = None):  # noqa:E501
