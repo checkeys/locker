@@ -76,9 +76,10 @@ class AuthProxy():
         client.sendall(b"\r\n")
         client.sendall(datas)
 
-    def authenticate(self, client: socket, head: RequestHeader, data: bytes):  # noqa:501 pylint:disable=R0911,R0912,R0914
+    def authenticate(self, client: socket, head: RequestHeader, data: bytes) -> Optional[Tuple[int, int]]:  # noqa:501 pylint:disable=R0911,R0912,R0914
         if head.request_line.target == "/favicon.ico":
-            return self.proxy.new_connection(client, data)
+            data_length: int = int(head.headers.get(Headers.CONTENT_LENGTH.value, "0"))  # noqa:501
+            return self.proxy.new_connection(client, data, head.length + data_length)  # noqa:501
 
         cookies: Cookies = Cookies(head.headers.get(Headers.COOKIE.value, ""))
         session_id: str = cookies.get("session_id")
