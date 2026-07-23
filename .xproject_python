@@ -2,7 +2,7 @@ name = "locker"
 home = "https://github.com/checkeys/locker/"
 description = "Access authentication"
 keywords = []
-version = "1.2.1"
+version = "1.2.2"
 
 [authors.zoumingzhe]
 name = "Mingzhe Zou"
