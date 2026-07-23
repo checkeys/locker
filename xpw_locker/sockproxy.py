@@ -108,6 +108,7 @@ class AuthProxy():
             if not password:
                 input_error_prompt = section.get("input_password_is_null")
             elif self.account.login(username, password, session_id):
+                Logger.stderr(Color.green(f"Redirect to {head.request_line.target}"))  # noqa:E501
                 return self.send_redirect(client, head.request_line.target)
             else:
                 input_error_prompt = section.get("input_verify_error")
