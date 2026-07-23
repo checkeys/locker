@@ -60,9 +60,6 @@ class AuthProxy():
     def send_redirect(self, client: socket, location: str):  # noqa:E501
         client.sendall(b"HTTP/1.1 303 See Other\r\n")
         client.sendall(f"{Headers.LOCATION.value}: {location}\r\n".encode())
-        # client.sendall(b"Cache-Control: no-cache, no-store, must-revalidate\r\n")  # noqa:E501
-        # client.sendall(b"Pragma: no-cache\r\n")
-        # client.sendall(b"Expires: 0\r\n")
         client.sendall(b"\r\n")
 
     def send_html(self, client: socket, content: str, session_id: Optional[str] = None):  # noqa:E501
@@ -70,6 +67,9 @@ class AuthProxy():
         client.sendall(b"HTTP/1.1 200 OK\r\n")
         client.sendall(f"{Headers.CONTENT_TYPE.value}: text/html\r\n".encode())
         client.sendall(f"{Headers.CONTENT_LENGTH.value}: {len(datas)}\r\n".encode())  # noqa:E501
+        client.sendall(f"{Headers.CACHE_CONTROL.value}: no-cache, no-store, must-revalidate\r\n".encode())  # noqa:E501
+        client.sendall(f"{Headers.PRAGMA.value}: no-cache\r\n".encode())
+        client.sendall(f"{Headers.EXPIRES.value}: 0\r\n".encode())
         if not session_id:
             session_id = self.account.tickets.search().data.session_id
             client.sendall(f"{Headers.SET_COOKIE.value}: session_id={session_id}\r\n".encode())  # noqa:E501

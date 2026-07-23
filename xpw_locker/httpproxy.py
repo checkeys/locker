@@ -95,6 +95,10 @@ class AuthRequestProxy(RequestProxy):
         context.setdefault("url", __project_home__)
         content = self.template.seek("login.html").render(**context)
         response = ResponseProxy.make_ok_response(content.encode())
+        response.headers.add(Headers.CONTENT_TYPE.value, "text/html")
+        response.headers.add(Headers.CACHE_CONTROL.value, "no-cache, no-store, must-revalidate")  # noqa:E501
+        response.headers.add(Headers.PRAGMA.value, "no-cache")
+        response.headers.add(Headers.EXPIRES.value, "0")
         if not session_id:
             response.set_cookie("session_id", self.account.tickets.search().data.session_id)  # noqa:E501
         return response
