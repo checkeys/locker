@@ -197,7 +197,9 @@ class TestAuthProxy(unittest.TestCase):
         mock_socket.side_effect = [fake_socket]
         client = sockproxy.socket()
         self.assertIs(client, fake_socket)
-        self.assertIsNone(self.proxy.request(client=client, address=("127.0.0.1", 1234)))  # noqa:E501
+        with mock.patch.object(self.proxy, "authenticate") as mock_auth:
+            mock_auth.side_effect = [(123, 456)]
+            self.assertIsNone(self.proxy.request(client=client, address=("127.0.0.1", 1234)))  # noqa:E501
 
     @mock.patch.object(sockproxy, "socket")
     def test_request_raise(self, mock_socket):

@@ -127,9 +127,12 @@ class AuthProxy():
             head = RequestHeader.parse(data)
 
             if head is not None:
+                items: List[str] = [f"Connection {address} closed"]
                 Logger.stderr(f"{head.request_line.method} {head.request_line.target}")  # noqa:E501
-                self.authenticate(client, head, data)
-                Logger.stderr(Color.red(f"Connection {address} closed"))
+                if isinstance(stats := self.authenticate(client, head, data), tuple):  # noqa:E501
+                    items.append(f"received {stats[0]} bytes from client")
+                    items.append(f"received {stats[1]} bytes from server")
+                Logger.stderr(Color.red(", ".join(items)))
             else:
                 Logger.stderr(Color.red(f"Invalid request: {data}"))
 
