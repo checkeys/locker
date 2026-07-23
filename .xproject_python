@@ -19,7 +19,7 @@ requirements = [
     "xkits-thread>=0.3",
     "xkits-lib>=0.5",
     "xhtm>=0.13",
-    "xser>=0.7",
+    "xser>=0.7.1",
     "xpw>=0.17",
 ]
 build_backend = "hatchling"
