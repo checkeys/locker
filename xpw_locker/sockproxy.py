@@ -139,6 +139,9 @@ class AuthProxy():
             else:
                 Logger.stderr(Color.red(f"Invalid request: {data}"))
 
+        except BrokenPipeError:
+            Logger.stderr(Color.red(f"Connection {address} broken pipe"))
+
         except Exception:  # pylint:disable=broad-exception-caught
             import traceback  # pylint:disable=import-outside-toplevel
 

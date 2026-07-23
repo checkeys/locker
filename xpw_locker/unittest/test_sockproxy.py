@@ -202,7 +202,19 @@ class TestAuthProxy(unittest.TestCase):
             self.assertIsNone(self.proxy.request(client=client, address=("127.0.0.1", 1234)))  # noqa:E501
 
     @mock.patch.object(sockproxy, "socket")
-    def test_request_raise(self, mock_socket):
+    def test_request_raise_BrokenPipeError(self, mock_socket):
+        fake_socket = mock.MagicMock()
+        fake_socket.fileno.side_effect = [1]
+        fake_socket.recv.side_effect = [b"POST / HTTP/1.1\r\nContent-Length: 27\r\nCookie: session_id=123456\r\n\r\nusername=demo&password=test"]  # noqa:E501
+        mock_socket.side_effect = [fake_socket]
+        client = sockproxy.socket()
+        self.assertIs(client, fake_socket)
+        with mock.patch.object(self.proxy, "authenticate") as mock_auth:
+            mock_auth.side_effect = [BrokenPipeError()]
+            self.assertIsNone(self.proxy.request(client=client, address=("127.0.0.1", 1234)))  # noqa:E501
+
+    @mock.patch.object(sockproxy, "socket")
+    def test_request_raise_Exception(self, mock_socket):
         fake_socket = mock.MagicMock()
         fake_socket.fileno.side_effect = [1]
         fake_socket.recv.side_effect = [b"POST / HTTP/1.1\r\nContent-Length: 27\r\nCookie: session_id=123456\r\n\r\nusername=demo&password=test"]  # noqa:E501
