@@ -109,7 +109,7 @@ class AuthProxy():
             if not password:
                 input_error_prompt = section.get("input_password_is_null")
             elif self.account.login(username, password, session_id):
-                Logger.stderr(Color.green(f"Redirect to {head.request_line.target}"))  # noqa:E501
+                Logger.stderr(Color.green(f"Redirect connection {client.getpeername()} to {head.request_line.target}"))  # noqa:E501
                 return self.send_redirect(client, head.request_line.target)
             else:
                 input_error_prompt = section.get("input_verify_error")
@@ -117,22 +117,25 @@ class AuthProxy():
         context.setdefault("input_error_prompt", input_error_prompt)
         context.setdefault("url", __project_home__)
         content = self.template.seek("login.html").render(**context)
+        Logger.stderr(Color.lightyellow(f"Send login.html to connection {client.getpeername()}"))  # noqa:E501
         return self.send_html(client, content, session_id)
 
     def request(self, client: socket, address: Tuple[str, int]):
-        Logger.stderr(Color.yellow(f"Connection {address} connecting"))
-
         try:
+            info: List[str] = [f"Connection {address}"]
             data: bytes = client.recv(1048576)  # 1MiB
             head = RequestHeader.parse(data)
 
             if head is not None:
-                items: List[str] = [f"Connection {address} closed"]
-                Logger.stderr(f"{head.request_line.method} {head.request_line.target}")  # noqa:E501
+                info.append(head.request_line.method)
+                info.append(head.request_line.target)
+                Logger.stderr(Color.yellow(" ".join(info)))
+
+                info = [f"Connection {address} closed"]
                 if isinstance(stats := self.authenticate(client, head, data), tuple):  # noqa:E501
-                    items.append(f"received {stats[0]} bytes from client")
-                    items.append(f"received {stats[1]} bytes from server")
-                Logger.stderr(Color.red(", ".join(items)))
+                    info.append(f"received {stats[0]} bytes from client")
+                    info.append(f"received {stats[1]} bytes from server")
+                Logger.stderr(Color.red(", ".join(info)))
             else:
                 Logger.stderr(Color.red(f"Invalid request: {data}"))
 

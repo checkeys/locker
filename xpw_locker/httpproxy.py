@@ -87,7 +87,7 @@ class AuthRequestProxy(RequestProxy):
             if not password:
                 input_error_prompt = section.get("input_password_is_null")
             elif self.account.login(username, password, session_id):
-                Logger.stderr(Color.green(f"Redirect to {path}"))
+                Logger.stderr(Color.green(f"Redirect the request to {path}"))
                 return ResponseProxy.redirect(status_code=303, location=path)
             else:
                 input_error_prompt = section.get("input_verify_error")
@@ -102,6 +102,7 @@ class AuthRequestProxy(RequestProxy):
         response.headers.add(Headers.EXPIRES.value, "0")
         if not session_id:
             response.set_cookie("session_id", self.account.tickets.search().data.session_id)  # noqa:E501
+        Logger.stderr(Color.lightyellow("Send login.html to request"))
         return response
 
     def request(self, *args, **kwargs) -> ResponseProxy:
