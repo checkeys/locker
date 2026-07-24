@@ -6,6 +6,6 @@ __project_home__ = "https://github.com/checkeys/locker/"
 __project_desc__ = "Access authentication"
 
 # package info
-__version__ = "1.3.0"
+__version__ = "1.3.1"
 __package_name__ = "xpw-locker"
 __package_desc__ = "Access authentication"
